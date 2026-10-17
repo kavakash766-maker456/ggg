@@ -1,0 +1,84 @@
+name: FilmFeed 4K Bot Engine
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 */4 * * *'  # every 4 hours as a fallback
+
+jobs:
+  run-bot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 280  # 4h40m hard cap
+    env:
+      GH_PAT: ${{ secrets.GH_PAT }}
+      SESSION_VAULT_ID: ${{ secrets.SESSION_VAULT_ID }}
+      BOT_PHONE: ${{ secrets.BOT_PHONE }}
+      TARGET_GROUP_JID: ${{ secrets.TARGET_GROUP_JID }}
+      TARGET_GROUP_JIDS: ${{ secrets.TARGET_GROUP_JIDS }}
+      TMDB_API_KEY: ${{ secrets.TMDB_API_KEY }}
+      TG_API_ID: ${{ secrets.TG_API_ID }}
+      TG_API_HASH: ${{ secrets.TG_API_HASH }}
+      TG_SESSION_STRING: ${{ secrets.TG_SESSION_STRING }}
+      RUNNER_LIFETIME_HOURS: ${{ secrets.RUNNER_LIFETIME_HOURS }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Setup Python 3.10
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y openssl ffmpeg
+
+      - name: Install Python packages
+        run: |
+          pip install --upgrade pip
+          pip install \
+            cryptography \
+            pycryptodome \
+            requests \
+            beautifulsoup4 \
+            gdown \
+            telethon \
+            Pillow \
+            playwright \
+            playwright-stealth \
+            aiohttp \
+            aiofiles \
+            rich \
+            curl_cffi
+
+      - name: Install Playwright browsers
+        run: playwright install chromium --with-deps
+
+      - name: Install Node packages
+        working-directory: bot
+        run: npm install
+
+      - name: Run FilmFeed Bot Engine
+        working-directory: bot
+        run: |
+          while true; do
+            echo "[$(date)] Starting bot..."
+            node src/index.js || true
+            echo "[$(date)] Bot exited, restarting in 5s..."
+            sleep 5
+          done
+
+      - name: Auto-trigger next runner
+        if: always()
+        run: |
+          curl -s -X POST \
+            -H "Authorization: token ${GH_PAT}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            "https://api.github.com/repos/${{ github.repository }}/actions/workflows/bot.yml/dispatches" \
+            -d '{"ref":"main"}'
