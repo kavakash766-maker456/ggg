@@ -1,27 +1,23 @@
-name: FilmFeed 4K Bot Engine
+name: FilmFeed WhatsApp Bot 24/7
 
 on:
+  push:
+    branches: [ main ]
   workflow_dispatch:
   schedule:
-    - cron: '0 */4 * * *'  # every 4 hours as a fallback
+    - cron: '30 */4 * * *'
+
+concurrency:
+  group: whatsapp-bot-instance
+  cancel-in-progress: true
 
 jobs:
   run-bot:
     runs-on: ubuntu-latest
-    timeout-minutes: 280  # 4h40m hard cap
-    env:
-      GH_PAT: ${{ secrets.GH_PAT }}
-      SESSION_VAULT_ID: ${{ secrets.SESSION_VAULT_ID }}
-      BOT_PHONE: ${{ secrets.BOT_PHONE }}
-      TARGET_GROUP_JID: ${{ secrets.TARGET_GROUP_JID }}
-      TARGET_GROUP_JIDS: ${{ secrets.TARGET_GROUP_JIDS }}
-      TMDB_API_KEY: ${{ secrets.TMDB_API_KEY }}
-      TG_API_ID: ${{ secrets.TG_API_ID }}
-      TG_API_HASH: ${{ secrets.TG_API_HASH }}
-      TG_SESSION_STRING: ${{ secrets.TG_SESSION_STRING }}
-      RUNNER_LIFETIME_HOURS: ${{ secrets.RUNNER_LIFETIME_HOURS }}
+    timeout-minutes: 320
+
     steps:
-      - name: Checkout
+      - name: Checkout Repository
         uses: actions/checkout@v4
 
       - name: Setup Node.js 22
@@ -34,14 +30,14 @@ jobs:
         with:
           python-version: '3.10'
 
-      - name: Install system dependencies
+      - name: Install System Dependencies
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y openssl ffmpeg
 
-      - name: Install Python packages
+      - name: Install Python Packages
         run: |
-          pip install --upgrade pip
+          python -m pip install --upgrade pip
           pip install \
             cryptography \
             pycryptodome \
@@ -56,29 +52,58 @@ jobs:
             aiofiles \
             rich \
             curl_cffi
+          python -m playwright install chromium --with-deps
 
-      - name: Install Playwright browsers
-        run: playwright install chromium --with-deps
-
-      - name: Install Node packages
-        working-directory: bot
+      - name: Install Node Dependencies
         run: npm install
 
       - name: Run FilmFeed Bot Engine
-        working-directory: bot
+        env:
+          BOT_PHONE: "94760372547"
+          TARGET_GROUP_JID: "120363419930344447@g.us"
+          TARGET_GROUP_JIDS: "120363419930344447@g.us,120363428509877949@g.us"
+          SESSION_VAULT_ID: "8f37b6dbcf07ff6fab07b21cc8cbe05b"
+          AUTH_DIR: "auth_info"
+          LOG_LEVEL: "info"
+          RUNNER_LIFETIME_HOURS: "4.5"
+          TMDB_API_KEY: "4314318a94f644b5d1661d5376c25f64"
+          TG_API_ID: "7012205"
+          TG_API_HASH: "840af80809b74458f7feaa110e5a6cc6"
+          TG_SESSION_STRING: "1BVtsOMQBuxImNO6Wyf4Ot181LDjrEfPye8DktJ2-oj1RDmcAbUwizMdo2PDu7sOmX4Ttw9WcPkJ6fMZA1LwEJDC9bnlA1vPsjM4HhvcZjF59iikcNPnNAv7GXaQjlingg5ViyxWUhyTp26AvvpBWlvL4VEzIUNqu4YLnRx-R3fefkVm8wEbkmVxGDKBnv3yK1Tx7Raohr_GzhqiKwF2K7VC7d57v9DX5dfFyb3k7PnsGiiYgcBp9owy3wj4s3f_HCql4yLWUin_FXaNUaaQYaWa1oXVeKkSHuDuu-wtlXzE6sVV3gEf6FnDu6A-FpI5wJRYl5UuiMgZV-vNpTGLvGgJpJfokL4I="
+          GH_PAT: ${{ secrets.GH_PAT }}
+          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
         run: |
+          mkdir -p auth_info temp
+          START_TIME=$(date +%s)
           while true; do
-            echo "[$(date)] Starting bot..."
-            node src/index.js || true
-            echo "[$(date)] Bot exited, restarting in 5s..."
+            echo "🚀 Starting FilmFeed Bot Engine..."
+            node src/index.js
+            EXIT_CODE=$?
+            NOW=$(date +%s)
+            ELAPSED=$((NOW - START_TIME))
+
+            if [ $EXIT_CODE -eq 0 ] && [ $ELAPSED -ge 16200 ]; then
+              echo "✅ Scheduled 4.5h rotation completed cleanly. Handing off..."
+              break
+            fi
+
+            if [ $ELAPSED -ge 17280 ]; then
+              echo "⏳ Runner lifespan reached 4.8h. Handing off..."
+              break
+            fi
+
+            echo "⚠️ Process exited with code $EXIT_CODE after ${ELAPSED}s. Restarting in 5s..."
             sleep 5
           done
 
-      - name: Auto-trigger next runner
+      - name: Auto-Trigger Next 24/7 Session Runner
         if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
         run: |
+          gh workflow run "FilmFeed WhatsApp Bot 24/7" --repo ${{ github.repository }} || \
           curl -s -X POST \
-            -H "Authorization: token ${GH_PAT}" \
+            -H "Authorization: Bearer $GH_TOKEN" \
             -H "Accept: application/vnd.github.v3+json" \
             "https://api.github.com/repos/${{ github.repository }}/actions/workflows/bot.yml/dispatches" \
-            -d '{"ref":"main"}'
+            -d '{"ref":"main"}' || true
