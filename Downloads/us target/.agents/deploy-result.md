@@ -1,34 +1,42 @@
-# WatchFreeMovies — Deployment Result
+# Deploy Result
 
-## Status: SUCCESS
+## Status
+DEPLOYED
 
-## Deployment URLs
+## Deployed URL
+https://watchfreemovies-weld.vercel.app
 
-- **Production URL:** https://watchfreemovies-weld.vercel.app
-- **Deployment-specific URL:** https://watchfreemovies-7upk3fut0-kavakash766-3005s-projects.vercel.app
-- **Project:** kavakash766-3005s-projects/watchfreemovies
+## Changes Deployed
+- Research-verified provider statuses (working/likely_working/uncertain/likely_down)
+- Provider registry updated with status field and isActive flags
+- AdBanner component updated with real Adsterra scripts
+- AdScript component created for script injection
+- Homepage updated with typed AdBanner placements (banner / banner2)
+- Movie detail page updated with ad placements above player and after cast
+- VideoPlayer updated with status dot indicators and warning banners
 
-## Environment Variables Set
+## Build Output
+Route (app)                              Size     First Load JS
+┌ ○ /                                    3.54 kB         103 kB
+├ ○ /_not-found                          155 B          87.2 kB
+├ ○ /about                               155 B          87.2 kB
+├ ƒ /api/movies                          0 B                0 B
+├ ○ /api/providers                       0 B                0 B
+├ ƒ /api/search                          0 B                0 B
+├ ○ /contact                             155 B          87.2 kB
+├ ○ /genres                              175 B            94 kB
+├ ƒ /genres/[slug]                       1.78 kB         102 kB
+├ ƒ /movie/[slug]                        5.92 kB         106 kB
+├ ƒ /movies                              1.78 kB         102 kB
+├ ○ /privacy                             155 B          87.2 kB
+├ ○ /robots.txt                          0 B                0 B
+├ ƒ /search                              2.49 kB         102 kB
+├ ○ /sitemap.xml                         0 B                0 B
+├ ○ /terms                               155 B          87.2 kB
+└ ○ /trending                            1.78 kB         102 kB
++ First Load JS shared by all            87.1 kB
 
-| Variable | Environment | Type |
-|---|---|---|
-| TMDB_API_KEY | Production | Secret |
-| NEXT_PUBLIC_SITE_URL | Production | Config |
-| NEXT_PUBLIC_SITE_NAME | Production | Config |
-
-## Deployment Notes
-
-- Vercel CLI v63.1.2 used for deployment
-- First deploy attempt failed because TMDB_API_KEY was not yet set on Vercel
-- After adding env vars, production deployment succeeded in ~2 minutes
-- Build completed successfully: 17 static pages generated, all routes compiled
-- **Deployment Protection is enabled** (Vercel Authentication). The site may require authentication to access via browser. Disable this in Vercel dashboard → Project Settings → Deployment Protection if public access is needed.
-
-## Next Steps
-
-1. **Disable Deployment Protection** in Vercel Dashboard if you want public access:
-   - Go to https://vercel.com/kavakash766-3005s-projects/watchfreemovies/settings
-   - Under "Deployment Protection", disable Vercel Authentication
-2. **Custom domain**: To use `watchfreemovies.vercel.app`, claim that alias in the Vercel dashboard under Domains
-3. **TMDB_ACCESS_TOKEN**: If using Bearer token auth instead of API key, add `TMDB_ACCESS_TOKEN` env var
-4. **Adsterra**: Add `ADSTERRA_PUBLISHER_ID`, `ADSTERRA_DIRECT_LINK`, `ADSTERRA_BANNER_SCRIPT` env vars when ready
+Build: ✓ Compiled successfully
+Types: ✓ Linting and checking validity of types
+Pages: ✓ Generating static pages (17/17)
+Vercel: ✓ Ready in 2m
