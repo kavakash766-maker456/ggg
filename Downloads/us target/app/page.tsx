@@ -35,24 +35,24 @@ async function HomeContent() {
   return (
     <>
       <CinematicHero movies={trendingMovies.slice(0, 5)} />
-      <AdBanner className='my-6' />
+      <AdBanner type='banner' className='my-6' />
       <MovieRow title='Trending This Week' movies={trendingMovies} viewAllHref='/trending' />
       <MovieRow title='Popular Movies' movies={get(popular)} viewAllHref='/movies' />
       <MovieRow title='Top Rated' movies={get(topRated)} description='Critically acclaimed masterpieces' />
-      <AdBanner className='my-6' />
+      <AdBanner type='banner2' className='my-6' />
       <MovieRow title='Latest Releases' movies={get(nowPlaying)} description='Now playing in theaters' />
       <MovieRow title='Coming Soon' movies={get(upcoming)} description='Upcoming theatrical releases' />
       <MovieRow title='Action & Adventure' movies={get(action)} viewAllHref='/genres/action-28' />
-      <AdBanner className='my-6' />
+      <AdBanner type='banner' className='my-6' />
       <MovieRow title='Science Fiction' movies={get(scifi)} viewAllHref='/genres/science-fiction-878' />
       <MovieRow title='Horror Nights' movies={get(horror)} viewAllHref='/genres/horror-27' />
       <MovieRow title='Thrillers' movies={get(thriller)} viewAllHref='/genres/thriller-53' />
-      <AdBanner className='my-6' />
+      <AdBanner type='banner2' className='my-6' />
       <MovieRow title='Comedy Picks' movies={get(comedy)} viewAllHref='/genres/comedy-35' />
       <MovieRow title='Romance' movies={get(romance)} viewAllHref='/genres/romance-10749' />
       <MovieRow title='Animation' movies={get(animation)} viewAllHref='/genres/animation-16' />
       <MovieRow title='Mystery & Crime' movies={get(mystery)} viewAllHref='/genres/mystery-9648' />
-      <AdBanner className='my-6' />
+      <AdBanner type='banner' className='my-6' />
       <MovieRow title='Hidden Gems' movies={get(hiddenGems)} description='Overlooked films worth watching' />
     </>
   );
