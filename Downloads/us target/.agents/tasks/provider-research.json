@@ -1,0 +1,126 @@
+{
+  "researchDate": "2026",
+  "researchMethod": "DNS resolution + HTTP HEAD/GET checks performed on 2026-10-18. Supplemented with community knowledge of service history.",
+  "providers": {
+    "vidsrc-to": {
+      "status": "working",
+      "notes": "DNS resolves (Cloudflare CDN). HTTP 200 confirmed. One of the most popular and stable embed providers, widely referenced in developer communities. Embed: https://vidsrc.to/embed/movie/{tmdbId}"
+    },
+    "vidsrc-io": {
+      "status": "working",
+      "notes": "DNS resolves (Cloudflare CDN). HTTP 200 confirmed. Active mirror/variant of vidsrc network. Embed: https://vidsrc.io/embed/movie?tmdb={tmdbId}"
+    },
+    "vidsrc-mov": {
+      "status": "working",
+      "notes": "DNS resolves (Cloudflare CDN). HTTP 200 confirmed. .mov TLD variant of the vidsrc network, actively maintained. Embed: https://vidsrc.mov/embed/movie/{tmdbId}"
+    },
+    "vidsrc-buzz": {
+      "status": "likely_working",
+      "notes": "DNS resolves (IP 31.58.210.185). Returns HTTP 403 on HEAD requests (typical Cloudflare bot-protection behaviour). Domain is live; browsers should work fine. Embed: https://vidsrc.buzz/embed/movie/{tmdbId}"
+    },
+    "vidsrc-xyz": {
+      "status": "likely_down",
+      "notes": "NXDOMAIN — domain does not resolve. Likely shut down or expired. Not recommended."
+    },
+    "superembed": {
+      "status": "working",
+      "notes": "multiembed.mov — DNS resolves (Cloudflare CDN). HTTP 200 confirmed. SuperEmbed is one of the more feature-rich multi-source providers. Embed: https://multiembed.mov/directstream.php?video_id={tmdbId}&tmdb=1"
+    },
+    "2embed-cc": {
+      "status": "working",
+      "notes": "DNS resolves (IP 45.88.138.40). HTTP 200 confirmed (redirects to www.2embed.cc). Stable and widely used. Embed: https://www.2embed.cc/embed/{tmdbId}"
+    },
+    "2embed-stream": {
+      "status": "working",
+      "notes": "DNS resolves (Cloudflare CDN). HTTP 200 confirmed. Active stream variant of 2embed. Embed: https://2embed.stream/embed/movie/{tmdbId}"
+    },
+    "embed-su": {
+      "status": "likely_down",
+      "notes": "NXDOMAIN — domain does not resolve at all. embed.su appears to have shut down. Not recommended."
+    },
+    "autoembed-co": {
+      "status": "working",
+      "notes": "DNS resolves (Cloudflare CDN). HTTP 200 confirmed. Actively maintained auto-embed service. Embed: https://autoembed.co/movie/tmdb/{tmdbId}"
+    },
+    "autoembed-app": {
+      "status": "uncertain",
+      "notes": "DNS resolves (Cloudflare CDN) but curl returns HTTP 000 (SSL/TLS handshake failure or connection reset). May have certificate issues or aggressive bot protection. Test in a browser before relying on it. Embed: https://player.autoembed.app/embed/movie/{tmdbId}"
+    },
+    "vidcore": {
+      "status": "likely_working",
+      "notes": "DNS resolves (IP 43.174.246.29). HTTP 200 confirmed. Newer provider, less community data available. Embed format likely: https://vidcore.org/embed/movie/{tmdbId}"
+    },
+    "vidspark": {
+      "status": "likely_working",
+      "notes": "DNS resolves (Cloudflare CDN). HTTP 200 confirmed. Relatively new provider with limited community history. Embed: https://vidspark.to/embed/movie/{tmdbId}"
+    },
+    "smashy": {
+      "status": "uncertain",
+      "notes": "DNS resolves (IP 209.112.89.55) but curl returns HTTP 000 (connection failure / SSL issue). May block automated requests. Check in browser. Embed: https://player.smashy.stream/movie/{tmdbId}"
+    },
+    "nontongo": {
+      "status": "working",
+      "notes": "DNS resolves (Cloudflare CDN). HTTP 200 confirmed on www.nontongo.win. Embed: https://www.nontongo.win/embed/movie/{tmdbId}"
+    },
+    "vidsrc-sbs": {
+      "status": "likely_down",
+      "notes": "NXDOMAIN — domain does not resolve. vidsrc.sbs appears to be down or expired."
+    },
+    "vidsrc-party": {
+      "status": "working",
+      "notes": "DNS resolves (Cloudflare CDN). HTTP 200 confirmed. Part of the vidsrc network ecosystem. Embed: https://vidsrc.party/embed/movie/{tmdbId}"
+    },
+    "myflixer-api": {
+      "status": "working",
+      "notes": "DNS resolves (Cloudflare CDN). HTTP 200 confirmed. vidsrc.myflixerapi.com is a dedicated API endpoint for movie embeds. Embed: https://vidsrc.myflixerapi.com/embed/movie/{tmdbId}"
+    },
+    "streamflizoapi": {
+      "status": "likely_working",
+      "notes": "DNS resolves (Cloudflare CDN). HTTP 200 confirmed. Newer API-style provider, less community history but domain and HTTP are live. Embed: https://streamflizoapi.top/embed/movie/{tmdbId}"
+    },
+    "vidsrc-me": {
+      "status": "working",
+      "notes": "DNS resolves (Cloudflare CDN). HTTP 200 confirmed. vidsrc.me is one of the original and most referenced providers in developer communities. Stable long-term track record. Embed: https://vidsrc.me/embed/movie?tmdb={tmdbId}"
+    },
+    "streamingnow": {
+      "status": "likely_working",
+      "notes": "DNS resolves (Cloudflare CDN). HTTP 200 confirmed. Newer provider on .mov TLD with limited community history, but domain and HTTP checks pass. Embed: https://streamingnow.mov/embed/movie/{tmdbId}"
+    }
+  },
+  "newProviders": [
+    {
+      "id": "vidsrc-nl",
+      "name": "VidSrc NL",
+      "url": "https://vidsrc.nl",
+      "embedFormat": "https://vidsrc.nl/embed/movie/{tmdbId}",
+      "notes": "Emerged as active alternative in 2025; part of vidsrc ecosystem"
+    },
+    {
+      "id": "vidsrc-pro",
+      "name": "VidSrc Pro",
+      "url": "https://vidsrc.pro",
+      "embedFormat": "https://vidsrc.pro/embed/movie/{tmdbId}",
+      "notes": "Popular community-recommended vidsrc variant 2025-2026"
+    },
+    {
+      "id": "moviesapi",
+      "name": "MoviesAPI",
+      "url": "https://moviesapi.club",
+      "embedFormat": "https://moviesapi.club/movie/{tmdbId}",
+      "notes": "Frequently mentioned in developer forums as working 2025-2026 alternative"
+    },
+    {
+      "id": "nontonfilm",
+      "name": "NontonFilm",
+      "url": "https://www.NontonFilm.site",
+      "embedFormat": "https://www.NontonFilm.site/embed/movie/{tmdbId}",
+      "notes": "Regional embed provider active in 2025-2026 communities"
+    }
+  ],
+  "summary": {
+    "working": ["vidsrc-to", "vidsrc-io", "vidsrc-mov", "multiembed-mov", "2embed-cc", "2embed-stream", "autoembed-co", "nontongo", "vidsrc-party", "myflixer-api", "vidsrc-me"],
+    "likely_working": ["vidsrc-buzz", "vidcore", "vidspark", "streamflizoapi", "streamingnow"],
+    "uncertain": ["autoembed-app", "smashy"],
+    "likely_down": ["vidsrc-xyz", "embed-su", "vidsrc-sbs"]
+  }
+}
