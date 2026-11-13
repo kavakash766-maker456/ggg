@@ -1,6 +1,7 @@
-﻿__pycache__/
-*.pyc
-node_modules/
-.next/
-auth_info/
-temp/
+node_modules
+.next
+.vercel
+.env*
+.agents
+plan.md
+tsconfig.tsbuildinfo
