@@ -31,7 +31,7 @@ import {
   X,
 } from "lucide-react";
 
-export type ContentTab = "movies" | "series" | "anime" | "mylist";
+export type ContentTab = "movies" | "series" | "cartoons" | "anime" | "mylist";
 export type FilterPill = "Popular" | "Trending" | "Recommendation" | "Top Rated" | "Coming Soon";
 
 const CATEGORY_PILLS: FilterPill[] = [
@@ -96,6 +96,8 @@ export default function HomePage() {
           endpoint = `/api/latest?page=${page}`;
         } else if (tab === "series") {
           endpoint = `/api/series?page=${page}`;
+        } else if (tab === "cartoons") {
+          endpoint = `/api/cartoons?page=${page}&limit=24`;
         } else if (tab === "anime") {
           endpoint = `/api/anime?type=series&page=${page}`;
         }
@@ -112,6 +114,9 @@ export default function HomePage() {
         } else if (tab === "series") {
           items = data.series || [];
           totalP = data.totalPages || 30;
+        } else if (tab === "cartoons") {
+          items = data.cartoons || [];
+          totalP = data.totalPages || 9;
         } else if (tab === "anime") {
           items = data.anime || [];
           totalP = data.totalPages || 20;
@@ -157,7 +162,7 @@ export default function HomePage() {
       const searchParam = params.get("search");
 
       const targetTab: ContentTab =
-        tabParam === "series" || tabParam === "anime" || tabParam === "mylist"
+        tabParam === "series" || tabParam === "cartoons" || tabParam === "anime" || tabParam === "mylist"
           ? tabParam
           : "movies";
       const targetPage = !isNaN(pageParam) && pageParam > 0 ? pageParam : 1;
@@ -195,7 +200,7 @@ export default function HomePage() {
   useEffect(() => {
     const handleNav = (e: Event) => {
       const detail = (e as CustomEvent).detail;
-      if (detail?.tab === "movies" || detail?.tab === "series" || detail?.tab === "anime") {
+      if (detail?.tab === "movies" || detail?.tab === "series" || detail?.tab === "cartoons" || detail?.tab === "anime") {
         handleTabChange(detail.tab);
       }
     };
@@ -433,6 +438,18 @@ export default function HomePage() {
                   }`}
                 >
                   TV Series
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleTabChange("cartoons")}
+                  className={`px-3 py-1 rounded-xl text-xs font-bold transition-all flex items-center gap-1 ${
+                    activeTab === "cartoons"
+                      ? "bg-amber-600/30 text-amber-300 border border-amber-500/30 shadow-sm"
+                      : "text-gray-400 hover:text-white"
+                  }`}
+                >
+                  <Tv className="h-3 w-3 text-amber-400" />
+                  <span>Cartoons 🎨</span>
                 </button>
                 <button
                   type="button"
@@ -753,6 +770,8 @@ export default function HomePage() {
                       <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/[0.06] text-white">
                         {activeTab === "anime" ? (
                           <Sparkles className="h-4 w-4 text-indigo-400" />
+                        ) : activeTab === "cartoons" ? (
+                          <Tv className="h-4 w-4 text-amber-400" />
                         ) : activeTab === "series" ? (
                           <Tv className="h-4 w-4 text-blue-400" />
                         ) : (
@@ -763,6 +782,8 @@ export default function HomePage() {
                         <h2 className="text-sm sm:text-base font-bold text-white">
                           {activeTab === "anime"
                             ? "AnimeGG Official Releases"
+                            : activeTab === "cartoons"
+                            ? "Sinhala Dubbed Cartoons (Cloudflare R2 Direct)"
                             : activeTab === "series"
                             ? "TV Series Catalog"
                             : "Full Cinema Catalog"}

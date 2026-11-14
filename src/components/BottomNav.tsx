@@ -57,6 +57,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
         detail?.view === "home" ||
         detail?.tab === "movies" ||
         detail?.tab === "series" ||
+        detail?.tab === "cartoons" ||
         detail?.tab === "anime"
       ) {
         setCurrentTab("home");

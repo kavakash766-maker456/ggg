@@ -210,6 +210,19 @@ export const Navbar: React.FC<NavbarProps> = ({
 
             <button
               type="button"
+              onClick={() => handleTabClick("cartoons")}
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                activeTab === "cartoons"
+                  ? "bg-amber-600/30 text-amber-300 border border-amber-500/30 shadow-sm"
+                  : "text-gray-400 hover:text-white hover:bg-white/[0.04]"
+              }`}
+            >
+              <Tv className="h-3.5 w-3.5 text-amber-400" />
+              <span>Cartoons 🎨</span>
+            </button>
+
+            <button
+              type="button"
               onClick={() => handleTabClick("anime")}
               className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
                 activeTab === "anime"
@@ -353,6 +366,19 @@ export const Navbar: React.FC<NavbarProps> = ({
                   <div className="flex items-center gap-3">
                     <Tv className="h-4 w-4" />
                     <span>TV Series</span>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleTabClick("cartoons")}
+                  className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-bold transition-colors ${
+                    activeTab === "cartoons" ? "bg-amber-600/30 text-amber-300" : "text-gray-300 hover:bg-white/[0.04]"
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <Tv className="h-4 w-4 text-amber-400" />
+                    <span>Sinhala Cartoons (Cloudflare R2)</span>
                   </div>
                 </button>
 
