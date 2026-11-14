@@ -828,6 +828,11 @@ export default function HomePage() {
                     </div>
                   )}
 
+                  {/* SECTION 9.5: BOTTOM AD BANNER */}
+                  <div className="pt-4">
+                    <AdBanner position="bottom" label="Fast Download Mirror" />
+                  </div>
+
                   {/* Pagination Controls */}
                   {totalPages > 1 && (
                     <div className="flex items-center justify-center gap-2 pt-6">

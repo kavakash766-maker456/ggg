@@ -27,16 +27,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const handleGoogleAuthRedirect = async () => {
     setIsLoading(true);
     setError(null);
-    const deviceId = await getDynamicDeviceId();
-    const currentPath = window.location.pathname + window.location.search;
-
-    const authUrl = `/api/auth/google?deviceId=${encodeURIComponent(
-      deviceId
-    )}&phone=${encodeURIComponent(phone.trim())}&returnTo=${encodeURIComponent(
-      currentPath
-    )}`;
-
-    window.location.href = authUrl;
+    try {
+      const { auth, googleProvider } = await import("@/lib/firebase");
+      const { signInWithRedirect } = await import("firebase/auth");
+      await signInWithRedirect(auth, googleProvider);
+    } catch (err: any) {
+      console.error("signInWithRedirect failed:", err);
+      setError("Failed to open Google Sign-in. Please try again.");
+      setIsLoading(false);
+    }
   };
 
   const handleGoogleSignIn = async () => {

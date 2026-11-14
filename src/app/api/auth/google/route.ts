@@ -22,6 +22,11 @@ export async function GET(request: Request) {
     JSON.stringify({ deviceId, phone, returnTo, redirectUri })
   ).toString("base64");
 
+  if (!GOOGLE_CLIENT_ID) {
+    // If no custom Google Client ID is configured on Vercel, redirect to client Firebase Auth
+    return NextResponse.redirect(new URL("/?login=1", request.url));
+  }
+
   const googleAuthUrl = new URL("https://accounts.google.com/o/oauth2/v2/auth");
   googleAuthUrl.searchParams.set("client_id", GOOGLE_CLIENT_ID);
   googleAuthUrl.searchParams.set("redirect_uri", redirectUri);

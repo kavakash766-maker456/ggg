@@ -86,15 +86,42 @@ export const Navbar: React.FC<NavbarProps> = ({
     let unsubAuth: (() => void) | null = null;
     if (typeof window !== "undefined") {
       import("@/lib/firebase").then(({ auth }) => {
-        import("firebase/auth").then(({ onAuthStateChanged }) => {
+        import("firebase/auth").then(({ onAuthStateChanged, getRedirectResult }) => {
+          getRedirectResult(auth)
+            .then(async (cred) => {
+              if (cred && cred.user && cred.user.email) {
+                const fbUser = cred.user;
+                const userEmail = fbUser.email || "";
+                const restored: UserProfile = {
+                  id: "usr_" + fbUser.uid.substring(0, 10),
+                  name: fbUser.displayName || (userEmail ? userEmail.split("@")[0] : "User"),
+                  email: userEmail.toLowerCase(),
+                  image: fbUser.photoURL || "",
+                  role: "user",
+                  deviceId: "dev_persisted",
+                  coins: 50,
+                  isVip: false,
+                  createdAt: new Date().toISOString(),
+                  lastLoginAt: new Date().toISOString(),
+                };
+                setCurrentUser(restored);
+                setProfile(restored);
+                syncUserWithServer().then((u) => {
+                  if (u) setProfile(u);
+                });
+              }
+            })
+            .catch((err) => console.warn("getRedirectResult warning:", err));
+
           unsubAuth = onAuthStateChanged(auth, async (fbUser) => {
             if (fbUser && fbUser.email) {
               const current = getCurrentUser();
               if (!current) {
+                const userEmail = fbUser.email || "";
                 const restored: UserProfile = {
                   id: "usr_" + fbUser.uid.substring(0, 10),
-                  name: fbUser.displayName || fbUser.email.split("@")[0],
-                  email: fbUser.email.toLowerCase(),
+                  name: fbUser.displayName || (userEmail ? userEmail.split("@")[0] : "User"),
+                  email: userEmail.toLowerCase(),
                   image: fbUser.photoURL || "",
                   role: "user",
                   deviceId: "dev_persisted",

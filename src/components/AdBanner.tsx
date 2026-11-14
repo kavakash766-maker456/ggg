@@ -11,7 +11,11 @@ interface AdBannerProps {
 }
 
 export const AdBanner: React.FC<AdBannerProps> = ({ className = "", label = "Sponsored Partner" }) => {
-  const [isVip, setIsVip] = useState<boolean>(true);
+  const [isVip, setIsVip] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    const user = getCurrentUser();
+    return Boolean(user && (isVipActive(user) || user.role === "admin" || user.role === "vip"));
+  });
 
   useEffect(() => {
     const checkVip = () => {

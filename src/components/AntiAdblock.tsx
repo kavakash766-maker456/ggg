@@ -2,62 +2,91 @@
 
 import React, { useEffect, useState } from "react";
 import { getCurrentUser, isVipActive } from "@/lib/userState";
-import { ShieldAlert, Crown, RefreshCw } from "lucide-react";
+import { ShieldAlert, Crown, RefreshCw, X } from "lucide-react";
 import Link from "next/link";
 
 export const AntiAdblock: React.FC = () => {
   const [adblockDetected, setAdblockDetected] = useState<boolean>(false);
+  const [dismissed, setDismissed] = useState<boolean>(true);
   const [isVip, setIsVip] = useState<boolean>(true);
 
   useEffect(() => {
+    // Check if dismissed in this session
+    if (typeof window !== "undefined" && sessionStorage.getItem("filmfeed_adblock_dismissed")) {
+      setDismissed(true);
+      return;
+    } else {
+      setDismissed(false);
+    }
+
     const user = getCurrentUser();
     const vip = Boolean(user && (isVipActive(user) || user.role === "admin" || user.role === "vip"));
     setIsVip(vip);
 
     if (vip) return; // VIPs are never flagged for adblock
 
-    // Test ad network domain accessibility
-    const testAdblock = async () => {
-      try {
-        const res = await fetch("https://czernik.org/21/dbc73422ecb8c31a10672cc9ba7eae8a", {
-          method: "HEAD",
-          mode: "no-cors",
-        });
-      } catch (err) {
-        // Failed network fetch indicates AdBlock extension interference
-        setAdblockDetected(true);
-      }
+    // Accurate DOM bait element check (no network HEAD fetch that causes false positives)
+    const checkBait = () => {
+      const bait = document.createElement("div");
+      bait.className = "adsbox ad-placement pub_300x250 text-ad";
+      bait.style.cssText = "position:absolute;left:-9999px;top:-9999px;width:1px;height:1px;pointer-events:none;";
+      document.body.appendChild(bait);
+
+      setTimeout(() => {
+        const isHidden =
+          bait.offsetParent === null ||
+          bait.offsetHeight === 0 ||
+          bait.offsetLeft === 0 ||
+          window.getComputedStyle(bait).display === "none";
+        
+        bait.remove();
+        if (isHidden) {
+          setAdblockDetected(true);
+        }
+      }, 500);
     };
 
-    const timer = setTimeout(testAdblock, 3000);
+    const timer = setTimeout(checkBait, 2500);
     return () => clearTimeout(timer);
   }, []);
 
-  if (isVip || !adblockDetected) {
+  const handleDismiss = () => {
+    sessionStorage.setItem("filmfeed_adblock_dismissed", "true");
+    setDismissed(true);
+  };
+
+  if (isVip || dismissed || !adblockDetected) {
     return null;
   }
 
   return (
-    <div className="fixed bottom-4 left-4 right-4 z-50 max-w-lg mx-auto bg-[#131622]/95 border border-rose-500/40 rounded-2xl p-4 shadow-2xl backdrop-blur-xl animate-in slide-in-from-bottom-5">
-      <div className="flex items-start gap-3">
+    <div className="fixed bottom-4 left-4 right-4 z-50 max-w-lg mx-auto bg-[#131622]/95 border border-rose-500/40 rounded-2xl p-4 shadow-2xl backdrop-blur-xl animate-in slide-in-from-bottom-5 text-white">
+      <div className="flex items-start gap-3 relative">
+        <button
+          onClick={handleDismiss}
+          className="absolute -top-1 -right-1 p-1 rounded-full text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
+          aria-label="Dismiss notice"
+        >
+          <X className="h-4 w-4" />
+        </button>
         <div className="h-9 w-9 rounded-xl bg-rose-500/20 border border-rose-500/40 flex items-center justify-center shrink-0">
           <ShieldAlert className="h-5 w-5 text-rose-400" />
         </div>
-        <div className="flex-1">
+        <div className="flex-1 pr-6">
           <h4 className="text-xs font-bold text-white flex items-center gap-1.5">
-            <span>AdBlocker Detected</span>
-            <span className="text-[10px] bg-rose-500/20 text-rose-300 px-1.5 py-0.2 rounded font-mono">Notice</span>
+            <span>AdBlocker Notice</span>
+            <span className="text-[10px] bg-rose-500/20 text-rose-300 px-1.5 py-0.2 rounded font-mono">Optional</span>
           </h4>
           <p className="text-[11px] text-gray-300 mt-1 leading-relaxed">
-            FilmFeed runs on advertising to keep free 4K streaming available. Please disable AdBlock or get a VIP Pass for 100% Ad-Free luxury streaming.
+            FilmFeed runs on advertising to keep free 4K streaming available. Please support us or get a VIP Pass for 100% Ad-Free luxury streaming.
           </p>
           <div className="mt-3 flex items-center gap-2">
             <button
-              onClick={() => window.location.reload()}
+              onClick={handleDismiss}
               className="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-xs font-bold text-white flex items-center gap-1.5 transition-all"
             >
               <RefreshCw className="h-3 w-3" />
-              <span>I Disabled It</span>
+              <span>Dismiss</span>
             </button>
             <Link
               href="/verify"

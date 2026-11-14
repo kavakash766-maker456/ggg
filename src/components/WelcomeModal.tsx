@@ -28,17 +28,54 @@ export const WelcomeModal: React.FC = () => {
   if (getCurrentUser()) return null;
   if (!isOpen) return null;
 
+  const [isLoading, setIsLoading] = useState(false);
+
   const handleContinueAsGuest = () => {
     sessionStorage.setItem("filmfeed_welcome_seen", "true");
     setIsOpen(false);
   };
 
-  const handleGoogleLogin = () => {
-    const deviceId = getDeviceId();
-    const currentPath = window.location.pathname + window.location.search;
-    window.location.href = `/api/auth/google?deviceId=${encodeURIComponent(
-      deviceId
-    )}&returnTo=${encodeURIComponent(currentPath)}`;
+  const handleGoogleLogin = async () => {
+    setIsLoading(true);
+    try {
+      const { auth, googleProvider } = await import("@/lib/firebase");
+      const { signInWithPopup, signInWithRedirect } = await import("firebase/auth");
+      const { setCurrentUser, syncUserWithServer, getDeviceId } = await import("@/lib/userState");
+
+      try {
+        const cred = await signInWithPopup(auth, googleProvider);
+        if (cred?.user?.email) {
+          const fbUser = cred.user;
+          const deviceId = getDeviceId();
+          const userEmail = fbUser.email || "";
+          const restored = {
+            id: "usr_" + fbUser.uid.substring(0, 10),
+            name: fbUser.displayName || (userEmail ? userEmail.split("@")[0] : "User"),
+            email: userEmail.toLowerCase(),
+            image: fbUser.photoURL || "",
+            role: "user" as const,
+            deviceId,
+            coins: 50,
+            isVip: false,
+            createdAt: new Date().toISOString(),
+            lastLoginAt: new Date().toISOString(),
+          };
+          setCurrentUser(restored);
+          syncUserWithServer();
+          sessionStorage.setItem("filmfeed_welcome_seen", "true");
+          setIsOpen(false);
+          window.dispatchEvent(new CustomEvent("filmfeed-user-change"));
+          return;
+        }
+      } catch (popupErr: any) {
+        console.warn("Popup blocked or failed, falling back to redirect:", popupErr?.message);
+        sessionStorage.setItem("filmfeed_welcome_seen", "true");
+        await signInWithRedirect(auth, googleProvider);
+      }
+    } catch (err: any) {
+      console.error("Firebase Google Auth failed:", err);
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -145,7 +182,8 @@ export const WelcomeModal: React.FC = () => {
 
             <button
               onClick={handleGoogleLogin}
-              className="mt-4 w-full flex items-center justify-center gap-2 rounded-xl bg-white py-2.5 text-xs font-black text-black shadow-lg hover:bg-gray-100 transition-all active:scale-95"
+              disabled={isLoading}
+              className="mt-4 w-full flex items-center justify-center gap-2 rounded-xl bg-white py-2.5 text-xs font-black text-black shadow-lg hover:bg-gray-100 transition-all active:scale-95 disabled:opacity-70"
             >
               <svg className="h-4 w-4" viewBox="0 0 24 24">
                 <path
@@ -165,7 +203,7 @@ export const WelcomeModal: React.FC = () => {
                   d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
                 />
               </svg>
-              <span>SIGN IN WITH GOOGLE</span>
+              <span>{isLoading ? "CONNECTING TO GOOGLE..." : "SIGN IN WITH GOOGLE"}</span>
             </button>
           </div>
         </div>
