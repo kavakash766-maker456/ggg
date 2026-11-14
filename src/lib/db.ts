@@ -410,7 +410,7 @@ export async function promoteUserVip(
     return { success: true, user: target };
   }
 
-  // Fallback to firestore
+  // Fallback to firestore or create immediate in-memory profile
   try {
     const { promoteUserVipByIdentifier } = await import("./firestore");
     const res = await promoteUserVipByIdentifier(identifier, isVip, packageId, days);
@@ -425,8 +425,7 @@ export async function promoteUserVip(
         u.vipPackage = undefined;
         u.vipExpiresAt = undefined;
       }
-      MEMORY_USERS.set(u.id, u);
-      writeUsersToFile(Array.from(MEMORY_USERS.values()));
+      persistUser(u);
     }
     return res;
   } catch (err: any) {

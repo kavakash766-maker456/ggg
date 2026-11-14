@@ -126,6 +126,8 @@ export interface VipSubmission {
 
 // In-memory resilient cache to guarantee users persist across serverless invocations and Firestore API hiccups
 const GLOBAL_USERS_CACHE = new Map<string, FirestoreUser>();
+let LAST_USERS_LIST_TIME = 0;
+const USERS_LIST_CACHE_TTL = 60 * 1000; // 60 seconds TTL for listFirestoreUsers
 
 export async function getFirestoreUser(id: string): Promise<FirestoreUser | null> {
   if (GLOBAL_USERS_CACHE.has(id)) {
@@ -135,7 +137,12 @@ export async function getFirestoreUser(id: string): Promise<FirestoreUser | null
     const res = await fetch(`${BASE_URL}/users/${encodeURIComponent(id)}?key=${API_KEY}`, {
       cache: "no-store",
     });
-    if (!res.ok) return GLOBAL_USERS_CACHE.get(id) || null;
+    if (!res.ok) {
+      if (res.status === 429) {
+        console.warn("[Firestore] 429 RESOURCE_EXHAUSTED: Daily Free Quota reached on mfeed-d6ad6.");
+      }
+      return GLOBAL_USERS_CACHE.get(id) || null;
+    }
     const data = await res.json();
     const user = fromFirestoreDocument(data);
     if (user && user.id) {
@@ -148,6 +155,7 @@ export async function getFirestoreUser(id: string): Promise<FirestoreUser | null
 
 export async function getFirestoreUserByEmail(email: string): Promise<FirestoreUser | null> {
   const cleanEmail = email.toLowerCase().trim();
+  if (!cleanEmail) return null;
   let found: FirestoreUser | null = null;
   GLOBAL_USERS_CACHE.forEach((u) => {
     if (!found && u.email && u.email.toLowerCase() === cleanEmail) {
@@ -156,8 +164,39 @@ export async function getFirestoreUserByEmail(email: string): Promise<FirestoreU
   });
   if (found) return found;
 
-  const users = await listFirestoreUsers();
-  return users.find((u) => u.email.toLowerCase() === cleanEmail) || null;
+  // Single-document structured query instead of scanning the full collection
+  try {
+    const res = await fetch(`${BASE_URL}:runQuery?key=${API_KEY}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        structuredQuery: {
+          from: [{ collectionId: "users" }],
+          where: {
+            fieldFilter: {
+              field: { fieldPath: "email" },
+              op: "EQUAL",
+              value: { stringValue: cleanEmail },
+            },
+          },
+          limit: 1,
+        },
+      }),
+      cache: "no-store",
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data) && data[0]?.document) {
+        const u = fromFirestoreDocument(data[0].document);
+        if (u && u.id) {
+          GLOBAL_USERS_CACHE.set(u.id, u);
+          return u;
+        }
+      }
+    }
+  } catch (e) {}
+
+  return null;
 }
 
 export async function getFirestoreUserByDeviceId(deviceId: string): Promise<FirestoreUser | null> {
@@ -174,14 +213,39 @@ export async function getFirestoreUserByDeviceId(deviceId: string): Promise<Fire
   });
   if (found) return found;
 
-  const users = await listFirestoreUsers();
-  return (
-    users.find(
-      (u) =>
-        (u.deviceId && u.deviceId !== "dev_default" && u.deviceId === deviceId) ||
-        u.sessions?.some((s: UserSession) => s.deviceId === deviceId)
-    ) || null
-  );
+  // Single-document structured query instead of scanning the full collection
+  try {
+    const res = await fetch(`${BASE_URL}:runQuery?key=${API_KEY}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        structuredQuery: {
+          from: [{ collectionId: "users" }],
+          where: {
+            fieldFilter: {
+              field: { fieldPath: "deviceId" },
+              op: "EQUAL",
+              value: { stringValue: deviceId },
+            },
+          },
+          limit: 1,
+        },
+      }),
+      cache: "no-store",
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data) && data[0]?.document) {
+        const u = fromFirestoreDocument(data[0].document);
+        if (u && u.id) {
+          GLOBAL_USERS_CACHE.set(u.id, u);
+          return u;
+        }
+      }
+    }
+  } catch (e) {}
+
+  return null;
 }
 
 export async function listFirestoreUsers(): Promise<FirestoreUser[]> {
@@ -192,11 +256,17 @@ export async function listFirestoreUsers(): Promise<FirestoreUser[]> {
     mergedMap.set(id, u);
   });
 
+  const now = Date.now();
+  if (now - LAST_USERS_LIST_TIME < USERS_LIST_CACHE_TTL && GLOBAL_USERS_CACHE.size > 0) {
+    return Array.from(mergedMap.values());
+  }
+
   try {
     const res = await fetch(`${BASE_URL}/users?pageSize=100&key=${API_KEY}`, {
       cache: "no-store",
     });
     if (res.ok) {
+      LAST_USERS_LIST_TIME = now;
       const data = await res.json();
       if (data.documents && Array.isArray(data.documents)) {
         for (const doc of data.documents) {
@@ -209,6 +279,8 @@ export async function listFirestoreUsers(): Promise<FirestoreUser[]> {
           }
         }
       }
+    } else if (res.status === 429) {
+      console.warn("[Firestore] 429 RESOURCE_EXHAUSTED: Daily Free Quota reached on mfeed-d6ad6.");
     }
   } catch (e) {
     console.warn("[Firestore] listFirestoreUsers fetch warning:", e);
@@ -311,6 +383,28 @@ export async function promoteUserVipByIdentifier(
         email: `${cleanDigits}@phone.filmfeed.lk`,
         phone: clean,
         deviceId: `dev_${cleanDigits}`,
+        image: "",
+        role: isVip ? "vip" : "user",
+        coins: 100,
+        isVip: Boolean(isVip),
+        vipPackage: isVip ? (packageId || "gold") : undefined,
+        vipExpiresAt: isVip ? new Date(Date.now() + pkgDays * 86400000).toISOString() : undefined,
+        isBanned: false,
+        createdAt: new Date().toISOString(),
+        lastLoginAt: new Date().toISOString(),
+      };
+      const ok = await saveFirestoreUser(newUser);
+      return { success: ok, user: newUser };
+    }
+    if (clean.includes("@")) {
+      const emailName = clean.split("@")[0];
+      const pkgDays = days || (packageId === "bronze" ? 3 : packageId === "silver" ? 7 : packageId === "platinum" ? 60 : 30);
+      const newUser: FirestoreUser = {
+        id: `usr_${Math.random().toString(36).substring(2, 10)}`,
+        name: `VIP User (${emailName})`,
+        email: clean.toLowerCase(),
+        phone: "",
+        deviceId: `dev_${Math.random().toString(36).substring(2, 10)}`,
         image: "",
         role: isVip ? "vip" : "user",
         coins: 100,
