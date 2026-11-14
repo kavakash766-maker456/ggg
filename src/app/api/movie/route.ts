@@ -3,6 +3,7 @@ import { getMovieDetails } from "@/lib/cinesubz";
 import { getSinhalaSubMovieDetails } from "@/lib/sinhalasub";
 import { getBaiscopesDetailsById } from "@/lib/baiscopes";
 import { getAnimeDetailsById } from "@/lib/anime";
+import { getCartoonDetailsById } from "@/lib/cartoons";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +17,9 @@ export async function GET(request: NextRequest) {
 
   let details = null;
 
-  if (url.includes("anime") || url.startsWith("anime-") || url.includes("animegg.org")) {
+  if (url.includes("cartoon") || url.startsWith("cartoon-") || url.includes("sinhalacartoons.com")) {
+    details = getCartoonDetailsById(url);
+  } else if (url.includes("anime") || url.startsWith("anime-") || url.includes("animegg.org")) {
     details = await getAnimeDetailsById(url);
   } else if (url.includes("sinhalasub.lk")) {
     details = await getSinhalaSubMovieDetails(url);

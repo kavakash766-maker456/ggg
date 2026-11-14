@@ -5,6 +5,7 @@ import { Navbar } from "@/components/Navbar";
 import { WelcomeModal } from "@/components/WelcomeModal";
 import { HowToUseModal } from "@/components/HowToUseModal";
 import { AdScripts } from "@/components/AdScripts";
+import { AntiAdblock } from "@/components/AntiAdblock";
 import { BottomNav } from "@/components/BottomNav";
 import { Suspense } from "react";
 
@@ -26,6 +27,8 @@ export default function RootLayout({
         <Suspense fallback={null}>
           <WelcomeModal />
           <HowToUseModal />
+          <AdScripts />
+          <AntiAdblock />
         </Suspense>
         <Navbar />
         <main className="flex-1">{children}</main>

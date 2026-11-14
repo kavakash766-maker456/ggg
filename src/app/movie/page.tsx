@@ -365,7 +365,21 @@ function MovieDetailContent() {
                           </div>
                         </div>
 
-                        <span className="text-[9px] font-bold text-gray-400 shrink-0">Included</span>
+                        {ep.url && ep.url.includes("sinhalacartoons.com") ? (
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <a
+                              href={ep.url.replace("cdn.", "dl.")}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="px-2.5 py-1 rounded-lg bg-emerald-600/30 border border-emerald-500/40 text-[10px] font-bold text-emerald-300 hover:bg-emerald-600 hover:text-white transition-all flex items-center gap-1"
+                            >
+                              <DownloadCloud className="h-3 w-3" />
+                              <span>Direct R2</span>
+                            </a>
+                          </div>
+                        ) : (
+                          <span className="text-[9px] font-bold text-gray-400 shrink-0">Included</span>
+                        )}
                       </div>
                     ))}
 
@@ -441,6 +455,20 @@ function MovieDetailContent() {
                             }`}>
                               {q.sizeText}
                             </span>
+                          )}
+
+                          {/* Direct R2 Download for Cartoons */}
+                          {q.ztUrl && q.ztUrl.includes("sinhalacartoons.com") && (
+                            <a
+                              href={q.ztUrl.replace("cdn.", "dl.")}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                              className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black transition-all flex items-center gap-1 shadow-sm shrink-0"
+                            >
+                              <DownloadCloud className="h-3.5 w-3.5" />
+                              <span>Direct R2 ⚡</span>
+                            </a>
                           )}
 
                           {/* WhatsApp Request Button */}

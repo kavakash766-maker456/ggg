@@ -1,5 +1,14 @@
 import cartoonsRaw from "@/data/cartoons.json";
-import { MovieSearchResult, MovieDetail } from "./cinesubz";
+import { MovieSearchResult, MovieDetail, SeriesEpisode } from "./cinesubz";
+
+export interface CartoonEpisode {
+  id: string;
+  episode: number;
+  title: string;
+  streamUrl: string;
+  downloadUrl: string;
+  quality?: string;
+}
 
 export interface CartoonItem {
   id: number | string;
@@ -11,6 +20,10 @@ export interface CartoonItem {
   tags?: string[];
   description?: string;
   poster?: string;
+  kind?: "movie" | "series";
+  stream_url?: string;
+  download_url?: string;
+  episodes?: CartoonEpisode[];
   download_links?: Array<{ quality?: string; url?: string; type?: string }>;
 }
 
@@ -33,16 +46,17 @@ function cleanTitle(raw: string): { en: string; si?: string } {
 
 export function cartoonToSearchResult(c: CartoonItem): MovieSearchResult {
   const titles = cleanTitle(c.title);
+  const isSeries = c.kind === "series" || (c.episodes && c.episodes.length > 0);
   return {
     id: `cartoon-${c.id}`,
     title: titles.en,
     url: c.url,
-    poster: c.poster || "https://yt3.ggpht.com/2mgb7U29xiD32lXvFZM1Ml4-m50CBNDaS6mSo2DmFuEcffRvPXmaGkN5FVfMOvkhnJ-MErGT08qPxw=s320-nd-v1-rwa",
+    poster: c.poster || "https://sinhalacartoons.com/wp-content/uploads/2026/10/7f33d6078a87460916917a056ea2c8c7.webp",
     year: extractYear(c.title, c.date),
-    quality: "Sinhala Dubbed",
-    type: "movie",
+    quality: "Cloudflare R2 Direct",
+    type: isSeries ? "series" : "movie",
     category: "cartoon",
-    rating: "8.9",
+    rating: "9.2",
   };
 }
 
@@ -50,7 +64,9 @@ export function getAllCartoons(limit = 40, page = 1, category?: string): { items
   let filtered = cartoonsList;
   if (category && category !== "All") {
     filtered = filtered.filter((c) =>
-      c.categories.some((cat) => cat.toLowerCase() === category.toLowerCase())
+      c.categories.some((cat) => cat.toLowerCase().includes(category.toLowerCase())) ||
+      (category.toLowerCase() === "series" && (c.kind === "series" || (c.episodes && c.episodes.length > 0))) ||
+      (category.toLowerCase() === "movies" && c.kind === "movie")
     );
   }
 
@@ -73,7 +89,8 @@ export function searchCartoons(query: string): MovieSearchResult[] {
       (c) =>
         c.title.toLowerCase().includes(q) ||
         (c.description && c.description.toLowerCase().includes(q)) ||
-        c.categories.some((cat) => cat.toLowerCase().includes(q))
+        c.categories.some((cat) => cat.toLowerCase().includes(q)) ||
+        (c.slug && c.slug.toLowerCase().includes(q))
     )
     .map(cartoonToSearchResult);
 }
@@ -81,46 +98,64 @@ export function searchCartoons(query: string): MovieSearchResult[] {
 export function getCartoonDetailsById(id: string): MovieDetail | null {
   const cleanId = id.replace(/^cartoon-/, "");
   const found = cartoonsList.find(
-    (c) => String(c.id) === cleanId || c.slug === cleanId || c.url === cleanId
+    (c) =>
+      String(c.id) === cleanId ||
+      c.slug === cleanId ||
+      c.url === cleanId ||
+      (c.url && id.includes(c.slug || ""))
   );
   if (!found) return null;
 
   const titles = cleanTitle(found.title);
+  const isSeries = found.kind === "series" || (found.episodes && found.episodes.length > 0);
+
+  const seriesEpisodes: SeriesEpisode[] = (found.episodes || []).map((ep, idx) => ({
+    season: 1,
+    episode: ep.episode || idx + 1,
+    title: ep.title || `Episode ${idx + 1}`,
+    url: ep.streamUrl || ep.downloadUrl || found.url,
+    thumb: found.poster || "",
+    date: found.date,
+  }));
+
+  const directDl = found.download_url || found.stream_url || found.url;
+  const directStream = found.stream_url || found.download_url || found.url;
 
   return {
     title: titles.en,
     url: found.url,
-    poster: found.poster || "https://yt3.ggpht.com/2mgb7U29xiD32lXvFZM1Ml4-m50CBNDaS6mSo2DmFuEcffRvPXmaGkN5FVfMOvkhnJ-MErGT08qPxw=s320-nd-v1-rwa",
+    poster: found.poster || "https://sinhalacartoons.com/wp-content/uploads/2026/10/7f33d6078a87460916917a056ea2c8c7.webp",
     backdrop: found.poster || "",
     year: extractYear(found.title, found.date),
-    quality: "Sinhala Dubbed",
-    imdbRating: "8.9",
-    duration: "1h 35m",
+    quality: "1080p FHD • Cloudflare R2 Direct",
+    imdbRating: "9.2",
+    duration: isSeries ? `${seriesEpisodes.length} Episodes` : "1h 35m",
     genres: found.categories.length > 0 ? found.categories : ["Animation", "Sinhala Dubbed"],
     languages: ["Sinhala Dubbed"],
-    directors: ["Cartoons Studio Dubbing"],
+    directors: ["Sinhala Cartoons R2 Studio"],
     cast: [{ name: "Sinhala Voice Cast" }],
-    tagline: titles.si || "Sinhala Dubbed Cartoon / Kids Movie",
-    description: found.description || `Watch and download ${found.title} Sinhala Dubbed movie now on FilmFeed.`,
+    tagline: titles.si || "Sinhala Dubbed Cartoon / Kids Animation",
+    description: found.description || `Watch and download ${found.title} Sinhala Dubbed in 4K/HD via high-speed Cloudflare R2 direct stream.`,
     qualities: [
       {
-        label: "1080p Sinhala Dubbed (Direct High Speed)",
-        meta: "Cartoons Server • 1-Click Download",
+        label: "1080p FHD (Cloudflare R2 Direct Download)",
+        meta: "High Speed Colombo CDN • 1-Click MP4",
         quality: "1080p",
-        sizeText: "1.4 GB",
+        sizeText: "1.2 GB",
         language: "Sinhala Dubbed",
-        ztUrl: found.url,
+        ztUrl: directDl,
       },
       {
-        label: "720p HD Sinhala Dubbed",
-        meta: "Data Saver Recommended",
+        label: "720p HD (Cloudflare Fast Stream)",
+        meta: "Zero Buffering CDN Direct Stream",
         quality: "720p",
-        sizeText: "850 MB",
+        sizeText: "750 MB",
         language: "Sinhala Dubbed",
-        ztUrl: found.url,
+        ztUrl: directStream,
       },
     ],
-    kind: "movie",
+    kind: isSeries ? "series" : "movie",
+    episodes: isSeries ? seriesEpisodes : undefined,
   };
 }
 
@@ -130,38 +165,3 @@ export function findCartoonByUrl(url: string): CartoonItem | null {
   );
   return found || null;
 }
-
-export function cartoonToMovieDetail(item: CartoonItem, fallbackUrl?: string): MovieDetail {
-  const detail = getCartoonDetailsById(String(item.id));
-  if (detail) return detail;
-  const titles = cleanTitle(item.title);
-  return {
-    title: titles.en,
-    url: item.url || fallbackUrl || "",
-    poster: item.poster || "https://yt3.ggpht.com/2mgb7U29xiD32lXvFZM1Ml4-m50CBNDaS6mSo2DmFuEcffRvPXmaGkN5FVfMOvkhnJ-MErGT08qPxw=s320-nd-v1-rwa",
-    backdrop: item.poster || "",
-    year: extractYear(item.title, item.date),
-    quality: "Sinhala Dubbed",
-    imdbRating: "8.9",
-    duration: "1h 30m",
-    genres: item.categories.length > 0 ? item.categories : ["Sinhala Dubbed", "Cartoons"],
-    languages: ["Sinhala Dubbed"],
-    directors: ["Cartoons Dubbing"],
-    cast: [{ name: "Voice Cast" }],
-    tagline: titles.si || "Sinhala Dubbed Animation",
-    description: item.description || item.title,
-    qualities: [
-      {
-        label: "1080p Sinhala Dubbed (Direct Server)",
-        meta: "Cartoons Server",
-        quality: "1080p",
-        sizeText: "1.4 GB",
-        language: "Sinhala Dubbed",
-        ztUrl: item.url || fallbackUrl || "",
-      },
-    ],
-    kind: "movie",
-  };
-}
-
-
