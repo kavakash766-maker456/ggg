@@ -138,15 +138,21 @@ export function getCartoonDetailsById(id: string): MovieDetail | null {
     description: found.description || `Watch and download ${found.title} Sinhala Dubbed in 4K/HD via high-speed Cloudflare R2 direct stream.`,
     qualities: [
       {
-        label: "1080p FHD (Cloudflare R2 Direct Download)",
-        meta: "High Speed Colombo CDN • 1-Click MP4",
+        label: directDl.includes("drive.google.com")
+          ? "720p HD (Google Drive High Speed)"
+          : "1080p FHD (Cloudflare R2 Direct Download)",
+        meta: directDl.includes("drive.google.com")
+          ? "Direct Google Drive Fast Stream"
+          : "High Speed Colombo CDN • 1-Click MP4",
         quality: "1080p",
         sizeText: "1.2 GB",
         language: "Sinhala Dubbed",
         ztUrl: directDl,
       },
       {
-        label: "720p HD (Cloudflare Fast Stream)",
+        label: directDl.includes("drive.google.com")
+          ? "480p SD (Fast Google Stream)"
+          : "720p HD (Cloudflare Fast Stream)",
         meta: "Zero Buffering CDN Direct Stream",
         quality: "720p",
         sizeText: "750 MB",

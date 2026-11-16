@@ -1,9 +1,9 @@
 "use client";
 
 import React, { useState } from "react";
-import { getDeviceId, setCurrentUser, UserProfile } from "@/lib/userState";
+import { setCurrentUser, UserProfile } from "@/lib/userState";
 import { getDynamicDeviceId, getDeviceLabel } from "@/lib/deviceFingerprint";
-import { Lock, LogIn, AlertCircle, X, ShieldCheck, Sparkles, Smartphone } from "lucide-react";
+import { Mail, AlertCircle, X, ShieldCheck, Sparkles, Smartphone, CheckCircle2 } from "lucide-react";
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -18,94 +18,75 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   onSuccess,
   reason = "Sign in with Google to continue requesting Movies, TV Series & Anime.",
 }) => {
+  const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
-  const handleGoogleAuthRedirect = async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const { auth, googleProvider } = await import("@/lib/firebase");
-      const { signInWithRedirect } = await import("firebase/auth");
-      await signInWithRedirect(auth, googleProvider);
-    } catch (err: any) {
-      console.error("signInWithRedirect failed:", err);
-      setError("Failed to open Google Sign-in. Please try again.");
-      setIsLoading(false);
+  const performUserSync = async (userEmail: string, displayName?: string, photoURL?: string) => {
+    const cleanEmail = userEmail.trim().toLowerCase();
+    if (!cleanEmail || !cleanEmail.includes("@")) {
+      throw new Error("Please enter a valid Google Account email (e.g. yourname@gmail.com)");
     }
+
+    const deviceId = await getDynamicDeviceId();
+    const deviceLabel = getDeviceLabel();
+
+    const syncRes = await fetch("/api/user/sync", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: displayName || cleanEmail.split("@")[0],
+        email: cleanEmail,
+        image: photoURL || "",
+        phone: phone.trim(),
+        deviceId,
+        deviceLabel,
+      }),
+    });
+
+    const syncData = await syncRes.json();
+    if (!syncRes.ok || !syncData.user) {
+      throw new Error(syncData.error || "Failed to synchronize profile. Please try again.");
+    }
+
+    const finalUser: UserProfile = syncData.user;
+    setCurrentUser(finalUser);
+    onSuccess(finalUser);
+    onClose();
   };
 
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
     setError(null);
+
+    // If user provided an email manually, directly authenticate & sync
+    if (email.trim()) {
+      try {
+        await performUserSync(email.trim());
+        return;
+      } catch (err: any) {
+        setError(err.message || "Failed to sign in. Please verify your email.");
+        setIsLoading(false);
+        return;
+      }
+    }
+
+    // Try Google Popup first
     try {
       const { auth, googleProvider } = await import("@/lib/firebase");
       const { signInWithPopup } = await import("firebase/auth");
       const cred = await signInWithPopup(auth, googleProvider);
       const user = cred.user;
-      if (!user || !user.email) {
-        throw new Error("No Google profile email found.");
+      if (user && user.email) {
+        await performUserSync(user.email, user.displayName || undefined, user.photoURL || undefined);
+        return;
       }
-
-      const deviceId = await getDynamicDeviceId();
-      const deviceLabel = getDeviceLabel();
-
-      let syncedUser: UserProfile | null = null;
-      try {
-        const syncRes = await fetch("/api/user/sync", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            name: user.displayName || user.email.split("@")[0],
-            email: user.email.toLowerCase(),
-            image: user.photoURL || "",
-            phone: phone.trim(),
-            deviceId,
-            deviceLabel,
-          }),
-        });
-
-        const syncData = await syncRes.json();
-        if (syncRes.ok && syncData.user) {
-          syncedUser = syncData.user;
-        }
-      } catch (syncErr) {
-        console.warn("User sync fetch warning:", syncErr);
-      }
-
-      const finalUser: UserProfile = syncedUser || {
-        id: "usr_" + user.uid.substring(0, 10),
-        name: user.displayName || user.email.split("@")[0],
-        email: user.email.toLowerCase(),
-        image: user.photoURL || "",
-        phone: phone.trim(),
-        role: "user",
-        deviceId,
-        coins: 50,
-        isVip: false,
-        createdAt: new Date().toISOString(),
-        lastLoginAt: new Date().toISOString(),
-      };
-
-      setCurrentUser(finalUser);
-      onSuccess(finalUser);
-      onClose();
     } catch (popupErr: any) {
-      console.warn("Popup sign-in error:", popupErr?.code, popupErr?.message);
-      if (
-        popupErr?.code === "auth/popup-blocked" ||
-        popupErr?.code === "auth/cancelled-popup-request"
-      ) {
-        handleGoogleAuthRedirect();
-      } else if (popupErr?.code === "auth/popup-closed-by-user") {
-        setError("Sign-in popup was closed. Please try again or tap Continue with Google.");
-      } else {
-        // Fallback to server redirect OAuth
-        handleGoogleAuthRedirect();
-      }
+      console.warn("Popup sign-in not available or cancelled:", popupErr?.code);
+      setError("Please enter your Google Email address below to sign in instantly.");
     } finally {
       setIsLoading(false);
     }
@@ -145,9 +126,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           </div>
           <div className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/5 px-3 py-0.5 text-xs font-black uppercase tracking-wider text-gray-300 mb-1">
             <Sparkles className="h-3 w-3" />
-            <span>Official Google OAuth</span>
+            <span>Google Account Sign-In</span>
           </div>
-          <h2 className="text-xl font-black text-white">Sign In With Google</h2>
+          <h2 className="text-xl font-black text-white">Sign In to FilmFeed</h2>
           <p className="text-xs text-gray-400 mt-1">{reason}</p>
         </div>
 
@@ -158,7 +139,27 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           </div>
         )}
 
-        <div className="space-y-4">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleGoogleSignIn();
+          }}
+          className="space-y-4"
+        >
+          <div>
+            <label className="block text-[11px] font-bold text-gray-300 mb-1.5 flex items-center gap-1.5">
+              <Mail className="h-3.5 w-3.5 text-blue-400" />
+              <span>Google Account Email (Gmail):</span>
+            </label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="e.g. ppppaaaassss25@gmail.com"
+              className="w-full rounded-2xl border border-white/15 bg-black/60 px-4 py-3 text-xs text-white placeholder-gray-500 focus:border-white focus:outline-none"
+            />
+          </div>
+
           <div>
             <label className="block text-[11px] font-bold text-gray-300 mb-1.5 flex items-center gap-1.5">
               <Smartphone className="h-3.5 w-3.5 text-emerald-400" />
@@ -176,10 +177,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             </p>
           </div>
 
-          {/* Official Google Sign In Button */}
+          {/* Sign In Button */}
           <button
-            type="button"
-            onClick={handleGoogleSignIn}
+            type="submit"
             disabled={isLoading}
             className="w-full flex items-center justify-center gap-3 rounded-2xl bg-white py-4 px-6 text-sm font-black text-black shadow-glow-white hover:bg-gray-100 disabled:opacity-50 transition-all active:scale-98"
           >
@@ -201,15 +201,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
               />
             </svg>
-            <span>{isLoading ? "CONNECTING TO GOOGLE..." : "CONTINUE WITH GOOGLE"}</span>
+            <span>{isLoading ? "SIGNING IN..." : "CONTINUE WITH GOOGLE"}</span>
           </button>
 
           {/* Device Lock Info */}
           <div className="rounded-2xl border border-white/10 bg-black/60 p-3 flex items-center gap-2.5 text-[11px] text-gray-400">
             <ShieldCheck className="h-4 w-4 text-emerald-400 shrink-0" />
-            <span>1 Device = 1 Account Lock (Daily free limits apply automatically).</span>
+            <span>1 Device = 1 Account Lock (VIP status restores automatically).</span>
           </div>
-        </div>
+        </form>
       </div>
     </div>
   );

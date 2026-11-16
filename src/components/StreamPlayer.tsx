@@ -35,6 +35,7 @@ interface StreamPlayerProps {
   poster?: string | null;
   numberOfSeasons?: number;
   seasons?: SeasonInfo[];
+  directStreamUrl?: string;
 }
 
 const SERVERS = STREAM_SERVERS;
@@ -57,6 +58,7 @@ export const StreamPlayer: React.FC<StreamPlayerProps> = ({
   poster,
   numberOfSeasons = 1,
   seasons = [],
+  directStreamUrl,
 }) => {
   // Mandate: Default Server 2 (VidSrc Cloud - vidsrc_me)
   const [activeServer, setActiveServer] = useState<ServerId>("vidsrc_me");
@@ -115,14 +117,17 @@ export const StreamPlayer: React.FC<StreamPlayerProps> = ({
     currentSeasonIndex >= availableSeasons.length - 1 &&
     selectedEpisode >= currentSeasonEpisodesCount;
 
-  // Validate TMDB ID to prevent console errors and broken embeds
-  const isValidTmdb = typeof tmdbId === "number" && !isNaN(tmdbId) && tmdbId > 0;
+  // Validate TMDB ID or direct stream to prevent console errors and broken embeds
+  const hasDirectStream = Boolean(directStreamUrl && directStreamUrl.trim().length > 0);
+  const isDirectMp4 = Boolean(hasDirectStream && (directStreamUrl?.includes(".mp4") || directStreamUrl?.includes("cdn.sinhalacartoons.com")));
+  const isValidTmdb = (typeof tmdbId === "number" && !isNaN(tmdbId) && tmdbId > 0) || hasDirectStream;
 
-  // Generate current embed URL using central streamServers resolver
+  // Generate current embed URL using central streamServers resolver or direct link
   const embedUrl = useMemo(() => {
+    if (hasDirectStream) return directStreamUrl || "";
     if (!isValidTmdb) return "";
     return getEmbedUrl(activeServer, tmdbId, type, selectedSeason, selectedEpisode);
-  }, [activeServer, type, tmdbId, selectedSeason, selectedEpisode, isValidTmdb]);
+  }, [hasDirectStream, directStreamUrl, activeServer, type, tmdbId, selectedSeason, selectedEpisode, isValidTmdb]);
 
   // Reset iframe loading state when URL or reload key changes
   useEffect(() => {
@@ -275,28 +280,44 @@ export const StreamPlayer: React.FC<StreamPlayerProps> = ({
               </div>
             </div>
           ) : (
-            /* Live Responsive Multi-Server Embed Iframe with Loading Indicator & Sandbox Permissions */
+            /* Live Responsive Multi-Server Embed Iframe or Direct Native MP4 HTML5 Player */
             <div className="relative w-full h-full">
-              {iframeLoading && (
-                <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-black/90 backdrop-blur-sm">
-                  <Loader2 className="h-10 w-10 animate-spin text-red-500 mb-3" />
-                  <span className="text-xs font-bold text-gray-300 tracking-wide">
-                    Connecting to {SERVERS.find((s) => s.id === activeServer)?.name || "VidSrc Cloud"}...
-                  </span>
-                  <span className="text-[10px] text-gray-500 mt-1">Multi-source high speed 1080p stream</span>
-                </div>
+              {isDirectMp4 ? (
+                <video
+                  key={embedUrl}
+                  src={embedUrl}
+                  controls
+                  playsInline
+                  autoPlay
+                  poster={backdrop || poster || undefined}
+                  className="w-full h-full object-contain bg-black"
+                >
+                  Your browser does not support the video tag.
+                </video>
+              ) : (
+                <>
+                  {iframeLoading && (
+                    <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-black/90 backdrop-blur-sm">
+                      <Loader2 className="h-10 w-10 animate-spin text-red-500 mb-3" />
+                      <span className="text-xs font-bold text-gray-300 tracking-wide">
+                        Connecting to {SERVERS.find((s) => s.id === activeServer)?.name || "FilmFeed Cinema CDN"}...
+                      </span>
+                      <span className="text-[10px] text-gray-500 mt-1">Multi-source high speed 1080p stream</span>
+                    </div>
+                  )}
+                  <iframe
+                    key={`${embedUrl}-${reloadKey}`}
+                    src={embedUrl}
+                    title={`${title} 4K Stream`}
+                    className="w-full h-full border-0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
+                    allowFullScreen
+                    loading="lazy"
+                    sandbox="allow-forms allow-pointer-lock allow-same-origin allow-scripts allow-top-navigation"
+                    onLoad={() => setIframeLoading(false)}
+                  />
+                </>
               )}
-              <iframe
-                key={`${embedUrl}-${reloadKey}`}
-                src={embedUrl}
-                title={`${title} 4K Stream`}
-                className="w-full h-full border-0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
-                allowFullScreen
-                loading="lazy"
-                sandbox="allow-forms allow-pointer-lock allow-same-origin allow-scripts allow-top-navigation"
-                onLoad={() => setIframeLoading(false)}
-              />
             </div>
           )}
         </div>

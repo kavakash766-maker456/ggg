@@ -48,7 +48,20 @@ export const WelcomeModal: React.FC = () => {
           const fbUser = cred.user;
           const deviceId = getDeviceId();
           const userEmail = fbUser.email || "";
-          const restored = {
+
+          // Sync with Firestore directly
+          const syncRes = await fetch("/api/user/sync", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              name: fbUser.displayName || userEmail.split("@")[0],
+              email: userEmail.toLowerCase(),
+              image: fbUser.photoURL || "",
+              deviceId,
+            }),
+          });
+          const syncData = await syncRes.json();
+          const restored = syncData.user || {
             id: "usr_" + fbUser.uid.substring(0, 10),
             name: fbUser.displayName || (userEmail ? userEmail.split("@")[0] : "User"),
             email: userEmail.toLowerCase(),
@@ -61,16 +74,16 @@ export const WelcomeModal: React.FC = () => {
             lastLoginAt: new Date().toISOString(),
           };
           setCurrentUser(restored);
-          syncUserWithServer();
           sessionStorage.setItem("filmfeed_welcome_seen", "true");
           setIsOpen(false);
           window.dispatchEvent(new CustomEvent("filmfeed-user-change"));
           return;
         }
       } catch (popupErr: any) {
-        console.warn("Popup blocked or failed, falling back to redirect:", popupErr?.message);
+        console.warn("Popup blocked or failed, opening instant sign in modal:", popupErr?.message);
         sessionStorage.setItem("filmfeed_welcome_seen", "true");
-        await signInWithRedirect(auth, googleProvider);
+        setIsOpen(false);
+        window.dispatchEvent(new CustomEvent("open-auth-modal"));
       }
     } catch (err: any) {
       console.error("Firebase Google Auth failed:", err);

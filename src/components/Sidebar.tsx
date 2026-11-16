@@ -4,7 +4,7 @@ import React from "react";
 import Link from "next/link";
 import { Film, Tv, Mic, Globe, Swords, Tv2, Crown, ChevronRight, Sparkles, Flame } from "lucide-react";
 
-export type TabType = "movies" | "series" | "anime" | "mylist" | "vault18" | string;
+export type TabType = "movies" | "series" | "cartoons" | "anime" | "mylist" | string;
 
 interface NavItem {
   id: TabType;
@@ -17,8 +17,8 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { id: "movies", label: "Movies", subLabel: "Cinema • 4K UHD", icon: Film },
   { id: "series", label: "TV Series", subLabel: "Shows • Full Seasons", icon: Tv },
+  { id: "cartoons", label: "Cartoons", subLabel: "Sinhala Dubbed • R2", icon: Film },
   { id: "anime", label: "Anime Hub", subLabel: "Sub & Dub Clean", icon: Sparkles, isLink: "/anime" },
-  { id: "vault18", label: "18+ VIP Vault", subLabel: "HD Adult • Discrete", icon: Flame, isLink: "/vault-18" },
 ];
 
 export interface SidebarProps {

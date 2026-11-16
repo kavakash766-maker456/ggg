@@ -368,9 +368,10 @@ function MovieDetailContent() {
                         {ep.url && ep.url.includes("sinhalacartoons.com") ? (
                           <div className="flex items-center gap-1.5 shrink-0">
                             <a
-                              href={ep.url.replace("cdn.", "dl.")}
+                              href={ep.url.replace("dl.", "cdn.")}
                               target="_blank"
                               rel="noopener noreferrer"
+                              download
                               className="px-2.5 py-1 rounded-lg bg-emerald-600/30 border border-emerald-500/40 text-[10px] font-bold text-emerald-300 hover:bg-emerald-600 hover:text-white transition-all flex items-center gap-1"
                             >
                               <DownloadCloud className="h-3 w-3" />
@@ -460,9 +461,10 @@ function MovieDetailContent() {
                           {/* Direct R2 Download for Cartoons */}
                           {q.ztUrl && q.ztUrl.includes("sinhalacartoons.com") && (
                             <a
-                              href={q.ztUrl.replace("cdn.", "dl.")}
+                              href={q.ztUrl.replace("dl.", "cdn.")}
                               target="_blank"
                               rel="noopener noreferrer"
+                              download
                               onClick={(e) => e.stopPropagation()}
                               className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black transition-all flex items-center gap-1 shadow-sm shrink-0"
                             >

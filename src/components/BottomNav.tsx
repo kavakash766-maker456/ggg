@@ -3,13 +3,13 @@
 import React, { useState, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { motion } from "framer-motion";
-import { Home, Search, Bookmark, User, Flame } from "lucide-react";
+import { Home, Search, Bookmark, User, Film } from "lucide-react";
 import { AuthModal } from "@/components/AuthModal";
 import { ProfileModal } from "@/components/ProfileModal";
 import { VipShareModal } from "@/components/VipShareModal";
 import { getCurrentUser, setCurrentUser, UserProfile } from "@/lib/userState";
 
-export type BottomNavTab = "home" | "search" | "vault18" | "mylist" | "profile";
+export type BottomNavTab = "home" | "search" | "cartoons" | "mylist" | "profile";
 
 interface BottomNavProps {
   activeNavTab?: BottomNavTab;
@@ -33,11 +33,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
   const [isVipModalOpen, setIsVipModalOpen] = useState(false);
 
   useEffect(() => {
-    if (pathname === "/vault-18") {
-      setCurrentTab("vault18");
-    } else {
-      setCurrentTab(activeNavTab);
-    }
+    setCurrentTab(activeNavTab);
   }, [pathname, activeNavTab]);
 
   useEffect(() => {
@@ -98,8 +94,15 @@ export const BottomNav: React.FC<BottomNavProps> = ({
         if (onOpenSearch) onOpenSearch();
         window.dispatchEvent(new CustomEvent("filmfeed-trigger-search"));
       }
-    } else if (tab === "vault18") {
-      router.push("/vault-18");
+    } else if (tab === "cartoons") {
+      if (!isRoot) {
+        router.push("/?tab=cartoons");
+      } else {
+        window.dispatchEvent(
+          new CustomEvent("filmfeed-navigate", { detail: { tab: "cartoons", view: "home" } })
+        );
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
     } else if (tab === "mylist") {
       if (!isRoot) {
         router.push("/?tab=mylist");
@@ -121,7 +124,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
   const navItems: { id: BottomNavTab; label: string; icon: any }[] = [
     { id: "home", label: "Home", icon: Home },
     { id: "search", label: "Search", icon: Search },
-    { id: "vault18", label: "18+ Vault", icon: Flame },
+    { id: "cartoons", label: "Cartoons", icon: Film },
     { id: "mylist", label: "My List", icon: Bookmark },
     { id: "profile", label: "Profile", icon: User },
   ];
@@ -174,11 +177,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
                       <Icon
                         className={`h-5 w-5 transition-all duration-200 ${
                           isActive
-                            ? item.id === "vault18"
-                              ? "text-rose-500 scale-110 drop-shadow-[0_0_8px_rgba(244,63,94,0.8)] fill-rose-500"
-                              : "text-white scale-110 drop-shadow-[0_0_6px_rgba(255,255,255,0.7)]"
-                            : item.id === "vault18"
-                            ? "text-rose-400/80 group-hover:text-rose-400"
+                            ? "text-white scale-110 drop-shadow-[0_0_6px_rgba(255,255,255,0.7)]"
                             : "text-gray-400 group-hover:text-gray-200"
                         } ${item.id === "mylist" && isActive ? "fill-white" : ""}`}
                       />

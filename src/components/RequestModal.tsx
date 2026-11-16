@@ -49,15 +49,28 @@ export const RequestModal: React.FC<RequestModalProps> = ({
   initialSeason,
 }) => {
   const router = useRouter();
-  const isAnime = Boolean(
+  const isCartoon = Boolean(
+    (movie as any).id?.toString().startsWith("cartoon-") ||
+    (movie as any).category === "cartoon" ||
+    movie.url?.includes("sinhalacartoons") ||
+    movie.url?.includes("lakvision") ||
+    (movie as any).categories?.some((c: string) => /cartoon|sinhala dubbed/i.test(c))
+  );
+
+  const isAnime = !isCartoon && Boolean(
     (movie as any).id?.toString().startsWith("anime-") ||
-    movie.url?.includes("anime") ||
-    movie.url?.includes("animegg") ||
     (movie as any).category === "anime-series" ||
     (movie as any).category === "anime-movie" ||
-    (movie as any).genres?.some((g: string) => /anime|animation/i.test(g))
+    movie.url?.includes("animekaizen") ||
+    movie.url?.includes("animegg") ||
+    movie.url?.includes("hianime")
   );
-  const isSeries = movie.kind === "series" || (movie.episodes && movie.episodes.length > 0) || isAnime;
+
+  const isSeries = !isCartoon && Boolean(
+    movie.kind === "series" ||
+    (movie.episodes && movie.episodes.length > 0) ||
+    isAnime
+  );
   const targetBotPhone = botPhone || "94782088603";
 
   // Group episodes by season
@@ -304,11 +317,12 @@ export const RequestModal: React.FC<RequestModalProps> = ({
     const epRangeStr = isIndividual ? sortedEps.join(",") : `${startEpisode}-${endEpisode}`;
     const epBatchCount = isIndividual ? sortedEps.length : Math.max(1, endEpisode - startEpisode + 1);
 
+    const posterParam = movie.poster ? ` | poster:${movie.poster}` : "";
     const botCommand = isAnime
-      ? `!anime ${animeQuery} | Season ${selectedSeason || 1} | ${selectedQuality} | ${requestToken} | ${epRangeStr} | ${effectiveDelivery}`
+      ? `!anime ${animeQuery} | Season ${selectedSeason || 1} | ${selectedQuality} | ${requestToken} | ${epRangeStr} | ${effectiveDelivery}${posterParam}`
       : isSeries
-      ? `!req_season ${movie.url} | S${selectedSeason} | ${selectedQuality} | ${requestToken} | ${epRangeStr} | ${effectiveDelivery}`
-      : `!req ${requestUrl} | ${selectedQuality} | ${requestToken} | ${effectiveDelivery}`;
+      ? `!req_season ${movie.url} | S${selectedSeason} | ${selectedQuality} | ${requestToken} | ${epRangeStr} | ${effectiveDelivery}${posterParam}`
+      : `!req ${requestUrl} | ${selectedQuality} | ${requestToken} | ${effectiveDelivery}${posterParam}`;
 
     const deliveryDestinationText = effectiveDelivery === "inbox"
       ? "📥 Personal Inbox (Direct Private WhatsApp DM)"
@@ -330,7 +344,7 @@ export const RequestModal: React.FC<RequestModalProps> = ({
 `${vipHeader}
 
 🍿 *Content:* ${cleanDisplayTitle}
-📦 *Type:* ${isAnime ? `Anime Series (Season ${selectedSeason || 1} Batch)` : isSeries ? `TV Series (Season ${selectedSeason} Pack)` : "4K Ultra HD Movie"}${epDetailsLine}${rawAnimeNote}
+📦 *Type:* ${isAnime ? `Anime Series (Season ${selectedSeason || 1} Batch)` : isSeries ? `TV Series (Season ${selectedSeason} Pack)` : isCartoon ? "Sinhala Dubbed Cartoon / Movie" : "4K Ultra HD Movie"}${epDetailsLine}${rawAnimeNote}
 📺 *Quality:* ${selectedQuality}
 🔑 *Security Token:* #${requestToken}
 📬 *Delivery Destination:* ${deliveryDestinationText}

@@ -25,25 +25,30 @@ export const AntiAdblock: React.FC = () => {
 
     if (vip) return; // VIPs are never flagged for adblock
 
-    // Accurate DOM bait element check (no network HEAD fetch that causes false positives)
+    // Accurate DOM bait element check with zero false positives on mobile Chrome
     const checkBait = () => {
       const bait = document.createElement("div");
       bait.className = "adsbox ad-placement pub_300x250 text-ad";
-      bait.style.cssText = "position:absolute;left:-9999px;top:-9999px;width:1px;height:1px;pointer-events:none;";
+      bait.style.cssText = "position:fixed;bottom:-100px;left:0;width:10px;height:10px;pointer-events:none;z-index:-1;";
       document.body.appendChild(bait);
 
       setTimeout(() => {
-        const isHidden =
-          bait.offsetParent === null ||
-          bait.offsetHeight === 0 ||
-          bait.offsetLeft === 0 ||
-          window.getComputedStyle(bait).display === "none";
-        
-        bait.remove();
-        if (isHidden) {
-          setAdblockDetected(true);
+        try {
+          const style = window.getComputedStyle(bait);
+          const isHidden =
+            style.display === "none" ||
+            style.visibility === "hidden" ||
+            style.opacity === "0" ||
+            bait.clientHeight === 0;
+
+          bait.remove();
+          if (isHidden && !sessionStorage.getItem("filmfeed_adblock_dismissed")) {
+            setAdblockDetected(true);
+          }
+        } catch {
+          bait.remove();
         }
-      }, 500);
+      }, 1000);
     };
 
     const timer = setTimeout(checkBait, 2500);

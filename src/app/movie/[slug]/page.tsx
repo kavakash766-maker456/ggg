@@ -32,6 +32,7 @@ interface MovieData {
   type:               "movie" | "tv";
   number_of_seasons?: number;
   seasons?:           SeasonInfo[];
+  directStreamUrl?:   string;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -45,7 +46,13 @@ function toSlug(title: string): string {
 }
 
 async function fetchMovieBySlug(slug: string): Promise<MovieData | null> {
-  const query = slug.replace(/-/g, " ");
+  const cleanQuery = slug
+    .replace(/-/g, " ")
+    .replace(/\bsinhala\s*dubbed\b/gi, "")
+    .replace(/\bsinhala\s*sub\b/gi, "")
+    .replace(/\bdubbed\b/gi, "")
+    .trim();
+  const query = cleanQuery || slug.replace(/-/g, " ");
 
   try {
     const searchRes = await fetch(
@@ -53,59 +60,95 @@ async function fetchMovieBySlug(slug: string): Promise<MovieData | null> {
       { next: { revalidate: 86400 } }
     );
 
-    if (!searchRes.ok) return null;
-    const searchData = await searchRes.json();
-    const results: any[] = searchData.results ?? [];
-    const mediaResults = results.filter(
-      (r) => r.media_type === "movie" || r.media_type === "tv"
-    );
+    let match: any = null;
+    let detail: any = null;
+    let cast: CastMember[] = [];
+    let type: "movie" | "tv" = "movie";
 
-    const match =
-      mediaResults.find((r) => toSlug(r.title ?? r.name ?? "") === slug) ??
-      mediaResults[0];
+    if (searchRes.ok) {
+      const searchData = await searchRes.json();
+      const results: any[] = searchData.results ?? [];
+      const mediaResults = results.filter(
+        (r) => r.media_type === "movie" || r.media_type === "tv"
+      );
 
-    if (!match) return null;
+      match =
+        mediaResults.find((r) => toSlug(r.title ?? r.name ?? "") === slug) ??
+        mediaResults[0];
 
-    const type      = match.media_type === "tv" ? "tv" : "movie";
-    const detailRes = await fetch(
-      `https://api.themoviedb.org/3/${type}/${match.id}?api_key=${TMDB_KEY}&language=en-US&append_to_response=credits`,
-      { next: { revalidate: 86400 } }
-    );
+      if (match) {
+        type = match.media_type === "tv" ? "tv" : "movie";
+        const detailRes = await fetch(
+          `https://api.themoviedb.org/3/${type}/${match.id}?api_key=${TMDB_KEY}&language=en-US&append_to_response=credits`,
+          { next: { revalidate: 86400 } }
+        );
 
-    if (!detailRes.ok) return null;
-    const detail = await detailRes.json();
+        if (detailRes.ok) {
+          detail = await detailRes.json();
+          cast = (detail.credits?.cast ?? [])
+            .slice(0, 12)
+            .map((c: any) => ({ name: c.name, character: c.character, profile_path: c.profile_path }));
+        }
+      }
+    }
 
-    const cast: CastMember[] = (detail.credits?.cast ?? [])
-      .slice(0, 12)
-      .map((c: any) => ({ name: c.name, character: c.character, profile_path: c.profile_path }));
+    // Fallback: Check local cartoons / Sinhala dubbed catalog
+    const { getCartoonDetailsById, findCartoonByUrl } = await import("@/lib/cartoons");
+    const cartoon = getCartoonDetailsById(slug) || findCartoonByUrl(slug);
 
-    return {
-      id:            detail.id,
-      title:         detail.title ?? detail.name ?? "",
-      slug:          toSlug(detail.title ?? detail.name ?? ""),
-      overview:      detail.overview ?? "",
-      release_date:  detail.release_date ?? detail.first_air_date ?? "",
-      runtime:       detail.runtime ?? detail.episode_run_time?.[0] ?? 0,
-      vote_average:  detail.vote_average ?? 0,
-      vote_count:    detail.vote_count ?? 0,
-      popularity:    detail.popularity ?? 0,
-      poster_path:   detail.poster_path,
-      backdrop_path: detail.backdrop_path,
-      genres:        detail.genres ?? [],
-      cast,
-      tagline:           detail.tagline ?? "",
-      type,
-      number_of_seasons: detail.number_of_seasons ?? (type === "tv" ? 1 : undefined),
-      seasons:           detail.seasons
-        ? detail.seasons
-            .filter((s: any) => s.season_number > 0)
-            .map((s: any) => ({
-              season_number: s.season_number,
-              episode_count: s.episode_count ?? 12,
-              name:          s.name,
-            }))
-        : undefined,
-    };
+    if (detail && match) {
+      return {
+        id:            detail.id,
+        title:         detail.title ?? detail.name ?? "",
+        slug:          toSlug(detail.title ?? detail.name ?? ""),
+        overview:      detail.overview ?? (cartoon?.description || ""),
+        release_date:  detail.release_date ?? detail.first_air_date ?? ((cartoon as any)?.year || (cartoon as any)?.date || ""),
+        runtime:       detail.runtime ?? detail.episode_run_time?.[0] ?? 0,
+        vote_average:  detail.vote_average ?? 0,
+        vote_count:    detail.vote_count ?? 0,
+        popularity:    detail.popularity ?? 0,
+        poster_path:   detail.poster_path,
+        backdrop_path: detail.backdrop_path,
+        genres:        detail.genres ?? [],
+        cast,
+        tagline:       detail.tagline ?? ((cartoon as any)?.tagline || ""),
+        type,
+        number_of_seasons: detail.number_of_seasons ?? (type === "tv" ? 1 : undefined),
+        seasons:       detail.seasons
+          ? detail.seasons
+              .filter((s: any) => s.season_number > 0)
+              .map((s: any) => ({
+                season_number: s.season_number,
+                episode_count: s.episode_count ?? 12,
+                name:          s.name,
+              }))
+          : undefined,
+        directStreamUrl: (cartoon as any)?.qualities?.[0]?.ztUrl || (cartoon as any)?.stream_url,
+      };
+    }
+
+    if (cartoon) {
+      return {
+        id: 999000 + (Math.abs(slug.split("").reduce((a, b) => a + b.charCodeAt(0), 0)) % 1000),
+        title: cartoon.title,
+        slug: slug,
+        overview: cartoon.description || "Official Sinhala Dubbed / Cartoon Release on FilmFeed 4K.",
+        release_date: (cartoon as any)?.year || (cartoon as any)?.date || "2024",
+        runtime: 95,
+        vote_average: 9.0,
+        vote_count: 500,
+        popularity: 100,
+        poster_path: null,
+        backdrop_path: null,
+        genres: ((cartoon as any)?.genres || (cartoon as any)?.categories || ["Animation"]).map((g: any, i: number) => ({ id: i, name: String(g) })),
+        cast: [{ name: "Sinhala Voice Cast", character: "Dubbing", profile_path: null }],
+        tagline: (cartoon as any)?.tagline || "Sinhala Dubbed Cinema",
+        type: cartoon.kind === "series" ? "tv" : "movie",
+        directStreamUrl: (cartoon as any)?.qualities?.[0]?.ztUrl || (cartoon as any)?.stream_url,
+      };
+    }
+
+    return null;
   } catch {
     return null;
   }
@@ -345,6 +388,7 @@ export default async function MoviePage({ params }: { params: { slug: string } }
           poster={poster}
           numberOfSeasons={movie.number_of_seasons}
           seasons={movie.seasons}
+          directStreamUrl={movie.directStreamUrl}
         />
       </section>
 

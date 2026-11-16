@@ -142,7 +142,11 @@ export const Navbar: React.FC<NavbarProps> = ({
       });
     }
 
+    const handleOpenAuth = () => setIsAuthModalOpen(true);
+    window.addEventListener("open-auth-modal", handleOpenAuth);
+
     return () => {
+      window.removeEventListener("open-auth-modal", handleOpenAuth);
       window.removeEventListener("filmfeed-user-change", handleUserChange);
       clearInterval(interval);
       document.removeEventListener("visibilitychange", handleVisibility);
@@ -151,11 +155,6 @@ export const Navbar: React.FC<NavbarProps> = ({
   }, []);
 
   const handleTabClick = (tab: string) => {
-    if (tab === "vault18") {
-      setIsMobileMenuOpen(false);
-      router.push("/vault-18");
-      return;
-    }
     if (onTabChange) onTabChange(tab);
     if (pathname !== "/") {
       router.push(`/?tab=${tab}`);
@@ -260,18 +259,6 @@ export const Navbar: React.FC<NavbarProps> = ({
               <Sparkles className="h-3.5 w-3.5 text-indigo-400" />
               <span>Anime Hub</span>
             </button>
-
-            <Link
-              href="/vault-18"
-              className={`px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
-                pathname === "/vault-18" || activeTab === "vault18"
-                  ? "bg-rose-600/25 text-rose-300 border border-rose-500/30 shadow-sm"
-                  : "text-gray-400 hover:text-rose-400 hover:bg-rose-500/10"
-              }`}
-            >
-              <Flame className="h-3.5 w-3.5 text-rose-500" />
-              <span>18+ Vault</span>
-            </Link>
 
             <button
               type="button"
@@ -421,19 +408,6 @@ export const Navbar: React.FC<NavbarProps> = ({
                     <span>Anime Hub (AnimeGG)</span>
                   </div>
                 </button>
-
-                <Link
-                  href="/vault-18"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-bold transition-colors ${
-                    pathname === "/vault-18" ? "bg-rose-600/30 text-rose-300" : "text-gray-300 hover:bg-rose-500/10 hover:text-rose-400"
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <Flame className="h-4 w-4 text-rose-500" />
-                    <span>18+ VIP Vault</span>
-                  </div>
-                </Link>
 
                 <button
                   type="button"
