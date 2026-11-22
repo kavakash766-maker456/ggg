@@ -109,8 +109,15 @@ function VerifyContent() {
     return () => clearInterval(timer);
   }, [currentStep]);
 
+  const ADSTERRA_SMARTLINKS = [
+    "https://directyp.org/4/19e3d997accef9e4c330f1be1284d8be",
+    "https://auctionr.org/4/14476ca5217e71596abcbc486c9ef407",
+    "https://asiafilm.org/4/739684d4bbb6e73705d5d7764d0734ca",
+    "https://ardance.org/4/85b763851dffe3ea28b84d2372c667e8",
+  ];
+
   const triggerMonetizationPop = () => {
-    const directLink = "https://apiguinee.org/4/f4abcfe9fc0ee1440879c20c9cdee0fe";
+    const directLink = ADSTERRA_SMARTLINKS[Math.floor(Math.random() * ADSTERRA_SMARTLINKS.length)];
     if (typeof window !== "undefined") {
       try {
         window.open(directLink, "_blank");
@@ -126,8 +133,14 @@ function VerifyContent() {
     }
   };
 
-  const isSeries = requestData.type === "series" || requestData.type === "tv" || requestData.type === "teledrama";
-  const isAnime = requestData.type === "anime";
+  const isCartoon = Boolean(
+    /cartoon|sinhala dubbed|sinhala dub/i.test(requestData.title || "") ||
+    requestData.url?.includes("sinhalacartoons") ||
+    requestData.url?.includes("cartoons.lk") ||
+    requestData.type === "cartoon"
+  );
+  const isSeries = (!isCartoon || requestData.type === "teledrama") && (requestData.type === "series" || requestData.type === "tv" || requestData.type === "teledrama");
+  const isAnime = !isCartoon && requestData.type === "anime";
 
   const finalMessage =
     requestData.message ||
@@ -136,7 +149,7 @@ function VerifyContent() {
 ━━━━━━━━━━━━━━━━━━━━━━ 🎬
 
 🍿 *Content:* ${requestData.title}
-📦 *Type:* ${isAnime ? `Anime Series (Season ${requestData.season || 1} Batch)` : isSeries ? `TV Series (Season ${requestData.season} Pack)` : "4K Ultra HD Movie"}
+📦 *Type:* ${isAnime ? `Anime Series (Season ${requestData.season || 1} Batch)` : isSeries ? `TV Series (Season ${requestData.season} Pack)` : isCartoon ? "Sinhala Dubbed Cartoon / Movie" : "4K Ultra HD Movie"}
 📺 *Quality:* ${requestData.quality}
 🔑 *Security Token:* #${requestData.token}
 

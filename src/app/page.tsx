@@ -710,6 +710,9 @@ export default function HomePage() {
                   </section>
                 )}
 
+                {/* IN-FEED ADSTERRA NATIVE BANNER */}
+                <AdBanner position="middle" label="Sponsored 4K Line" />
+
                 {/* SECTION 6: TOP RATED MASTERPIECES */}
                 {topRatedMovies.length > 0 && currentPage === 1 && (
                   <section className="space-y-3.5 pt-2">

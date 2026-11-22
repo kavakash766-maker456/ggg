@@ -56,10 +56,11 @@ export const RequestModal: React.FC<RequestModalProps> = ({
     (movie as any).id?.toString().startsWith("cartoon-") ||
     (movie as any).category === "cartoon" ||
     movie.url?.includes("sinhalacartoons") ||
+    movie.url?.includes("cartoons.lk") ||
     movie.url?.includes("lakvision") ||
-    /cartoon|sinhala dubbed/i.test(movie.title || "") ||
-    (movie as any).genres?.some((g: string) => /cartoon|sinhala dubbed/i.test(g)) ||
-    (movie as any).categories?.some((c: string) => /cartoon|sinhala dubbed/i.test(c))
+    /cartoon|sinhala dubbed|sinhala dub/i.test(movie.title || "") ||
+    (movie as any).genres?.some((g: string) => /cartoon|sinhala dubbed|sinhala dub/i.test(g)) ||
+    (movie as any).categories?.some((c: string) => /cartoon|sinhala dubbed|sinhala dub/i.test(c))
   );
 
   const isTeledrama = Boolean(
@@ -68,7 +69,7 @@ export const RequestModal: React.FC<RequestModalProps> = ({
     movie.url?.includes("col3neg")
   );
 
-  const isAnime = !isCartoon && !isTeledrama && Boolean(
+  const isAnime = !isCartoon && !isTeledrama && !/sinhala\s*(?:dubbed|dub)/i.test(movie.title || "") && Boolean(
     (movie as any).id?.toString().startsWith("anime-") ||
     (movie as any).category === "anime-series" ||
     (movie as any).category === "anime-movie" ||
@@ -89,8 +90,9 @@ export const RequestModal: React.FC<RequestModalProps> = ({
   const seasonsMap: { [key: number]: SeriesEpisode[] } = {};
   if (isSeries && movie.episodes) {
     movie.episodes.forEach((ep) => {
-      if (!seasonsMap[ep.season]) seasonsMap[ep.season] = [];
-      seasonsMap[ep.season].push(ep);
+      const s = ep.season || 1;
+      if (!seasonsMap[s]) seasonsMap[s] = [];
+      seasonsMap[s].push(ep);
     });
   }
   const availableSeasons = Object.keys(seasonsMap).map(Number).sort((a, b) => a - b);
@@ -110,7 +112,20 @@ export const RequestModal: React.FC<RequestModalProps> = ({
 
   const BUNDLE_SIZE = 20;
   const bundles: { id: string; label: string; start: number; end: number }[] = [];
-  if (totalEpsInSeason <= BUNDLE_SIZE) {
+  if (seasonEps.length > 0 && seasonEps[0].episode > 20) {
+    for (let i = 0; i < seasonEps.length; i += BUNDLE_SIZE) {
+      const chunk = seasonEps.slice(i, i + BUNDLE_SIZE);
+      const startEp = chunk[0].episode;
+      const endEp = chunk[chunk.length - 1].episode;
+      const bIndex = Math.floor(i / BUNDLE_SIZE) + 1;
+      bundles.push({
+        id: `${startEp}-${endEp}`,
+        label: `Episodes ${startEp} - ${endEp} (Bundle ${bIndex})`,
+        start: startEp,
+        end: endEp,
+      });
+    }
+  } else if (totalEpsInSeason <= BUNDLE_SIZE) {
     bundles.push({
       id: `1-${totalEpsInSeason}`,
       label: `Episodes 1 - ${totalEpsInSeason} (All ${totalEpsInSeason} eps)`,
@@ -130,9 +145,10 @@ export const RequestModal: React.FC<RequestModalProps> = ({
     }
   }
 
-  const [selectedBundleId, setSelectedBundleId] = useState<string>("1-20");
-  const [startEpisode, setStartEpisode] = useState<number>(1);
-  const [endEpisode, setEndEpisode] = useState<number>(20);
+  const defaultBundle = bundles.length > 0 ? bundles[0] : { id: "1-20", start: 1, end: 20 };
+  const [selectedBundleId, setSelectedBundleId] = useState<string>(defaultBundle.id);
+  const [startEpisode, setStartEpisode] = useState<number>(defaultBundle.start);
+  const [endEpisode, setEndEpisode] = useState<number>(defaultBundle.end);
   const [isCustomRange, setIsCustomRange] = useState<boolean>(false);
 
   // Individual Episode Selection (Discrete selection: e.g. Ep 1, 2, 5, 8)
