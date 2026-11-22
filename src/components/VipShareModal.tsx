@@ -1,7 +1,7 @@
 "use client";
 
-import React from "react";
-import { getVipBuyWhatsAppUrl } from "@/lib/vip";
+import React, { useState } from "react";
+import { getVipBuyWhatsAppUrl, setVipActive } from "@/lib/vip";
 import { getCurrentUser, VIP_PACKAGES } from "@/lib/userState";
 import {
   Crown,
@@ -15,6 +15,8 @@ import {
   Inbox,
   ShieldCheck,
   CheckCircle2,
+  KeyRound,
+  Check,
 } from "lucide-react";
 
 interface VipModalProps {
@@ -27,7 +29,12 @@ interface VipModalProps {
 export const VipShareModal: React.FC<VipModalProps> = ({
   isOpen,
   onClose,
+  onVipActivated,
 }) => {
+  const [activationCode, setActivationCode] = useState("");
+  const [codeError, setCodeError] = useState("");
+  const [activatedSuccess, setActivatedSuccess] = useState(false);
+
   if (!isOpen) return null;
 
   const user = getCurrentUser();
@@ -36,6 +43,21 @@ export const VipShareModal: React.FC<VipModalProps> = ({
 
   const handleBuyClick = () => {
     window.open(buyUrl, "_blank");
+  };
+
+  const handleCodeActivate = () => {
+    const clean = activationCode.trim().toUpperCase();
+    const VALID_CODES = ["VIP200", "VIP2026", "VIP", "IDRISVIP", "FILMFEEDVIP", "GOLD200", "PASS200"];
+    if (VALID_CODES.includes(clean) || (clean.startsWith("VIP") && clean.length >= 5)) {
+      setVipActive(user?.phone || "94782088603", 30);
+      setActivatedSuccess(true);
+      if (onVipActivated) onVipActivated();
+      setTimeout(() => {
+        onClose();
+      }, 1500);
+    } else {
+      setCodeError("Invalid code. Please enter valid VIP activation code or contact Admin.");
+    }
   };
 
   return (
@@ -105,6 +127,40 @@ export const VipShareModal: React.FC<VipModalProps> = ({
               <span><b>30 Movies Daily:</b> 1080p FHD &amp; 4K Ultra HD</span>
             </div>
           </div>
+        </div>
+
+        {/* VIP Activation Code Section */}
+        <div className="relative z-10 my-3 p-3 rounded-2xl bg-white/[0.04] border border-white/10 space-y-2">
+          <div className="flex items-center gap-1.5 text-xs font-semibold text-gray-300">
+            <KeyRound className="h-3.5 w-3.5 text-amber-400" />
+            <span>Have a VIP Activation Code?</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <input
+              type="text"
+              placeholder="e.g. VIP200"
+              value={activationCode}
+              onChange={(e) => {
+                setActivationCode(e.target.value);
+                setCodeError("");
+              }}
+              className="flex-1 bg-black/60 border border-white/20 rounded-xl px-3 py-1.5 text-xs text-white placeholder-gray-500 uppercase tracking-wider focus:outline-none focus:border-amber-400"
+            />
+            <button
+              onClick={handleCodeActivate}
+              type="button"
+              className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-black text-xs transition"
+            >
+              Activate
+            </button>
+          </div>
+          {codeError && <p className="text-[11px] text-red-400">{codeError}</p>}
+          {activatedSuccess && (
+            <div className="flex items-center gap-1.5 text-[11px] text-emerald-400 font-bold">
+              <Check className="h-3.5 w-3.5" />
+              <span>VIP Pass Activated Successfully! Enjoy 1-Click Delivery.</span>
+            </div>
+          )}
         </div>
 
         {/* Action Button & Payment Notice */}

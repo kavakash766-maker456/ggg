@@ -110,7 +110,7 @@ function VerifyContent() {
   }, [currentStep]);
 
   const triggerMonetizationPop = () => {
-    const directLink = "https://budgetezy.org/4/a6f18f1a6582da8862a595ffaecd24c5";
+    const directLink = "https://apiguinee.org/4/f4abcfe9fc0ee1440879c20c9cdee0fe";
     if (typeof window !== "undefined") {
       try {
         window.open(directLink, "_blank");

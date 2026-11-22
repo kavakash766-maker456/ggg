@@ -6,6 +6,8 @@ import { MovieDetail, SeriesEpisode } from "@/lib/cinesubz";
 import { getVipStatus } from "@/lib/vip";
 import {
   getCurrentUser,
+  setCurrentUser,
+  getDeviceId,
   getDailyUsage,
   incrementUsage,
   checkRequestLimit,
@@ -147,7 +149,7 @@ export const RequestModal: React.FC<RequestModalProps> = ({
   const [blockedReason, setBlockedReason] = useState<string | null>(null);
 
   const isUserVip = Boolean(
-    currentUser && (isVipActive(currentUser) || currentUser.role === "admin" || getVipStatus())
+    (currentUser && (isVipActive(currentUser) || currentUser.role === "admin")) || getVipStatus()
   );
   const requestType: "movie" | "series" | "anime" = isAnime ? "anime" : isSeries ? "series" : "movie";
 
@@ -235,7 +237,9 @@ export const RequestModal: React.FC<RequestModalProps> = ({
       setProfile(user);
       setAuthRequired(!user);
 
-      const vip = Boolean(user && (isVipActive(user) || user.role === "admin" || getVipStatus()));
+      const vip = Boolean(
+        (user && (isVipActive(user) || user.role === "admin")) || getVipStatus()
+      );
       if ((isSeries || isAnime) && !vip) {
         setBlockedReason(
           "TV Series and Anime Season packs require VIP Membership. Upgrade to VIP to request full seasons & custom episode batches!"
@@ -248,15 +252,32 @@ export const RequestModal: React.FC<RequestModalProps> = ({
     checkGate();
     const handleUserChange = () => checkGate();
     window.addEventListener("filmfeed-user-change", handleUserChange);
-    return () => window.removeEventListener("filmfeed-user-change", handleUserChange);
+    window.addEventListener("storage", handleUserChange);
+    return () => {
+      window.removeEventListener("filmfeed-user-change", handleUserChange);
+      window.removeEventListener("storage", handleUserChange);
+    };
   }, [isSeries, isAnime, isOpen]);
 
   if (!isOpen) return null;
 
   const handleRequestClick = async (deliveryMode: "group" | "inbox" = "group") => {
-    // 1. Mandatory Google Sign-In Check
-    const user = getCurrentUser();
-    if (!user) {
+    // 1. User check (VIP users can request directly even without prior Google sign-in)
+    let user = getCurrentUser();
+    if (!user && getVipStatus()) {
+      user = {
+        id: "usr_vip_" + Math.random().toString(36).substring(2, 8),
+        name: "VIP Member",
+        email: "vip@filmfeed.vip",
+        role: "vip",
+        deviceId: getDeviceId(),
+        coins: 100,
+        isVip: true,
+        createdAt: new Date().toISOString(),
+        lastLoginAt: new Date().toISOString(),
+      };
+      setCurrentUser(user);
+    } else if (!user) {
       setAuthRequired(true);
       setIsAuthModalOpen(true);
       return;

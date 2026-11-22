@@ -373,9 +373,18 @@ export async function syncUserWithServer(): Promise<UserProfile | null> {
     if (res.ok) {
       const data = await res.json();
       if (data.user && typeof data.user === "object" && (data.user.id || data.user.email)) {
-        // Server database is the single source of truth for VIP status.
-        setCurrentUser(data.user);
-        return data.user;
+        const serverUser = data.user;
+        // Preserve active unexpired VIP if user already holds it locally
+        if (current && isVipActive(current) && !isVipActive(serverUser)) {
+          serverUser.isVip = true;
+          if (!serverUser.role || serverUser.role === "user") {
+            serverUser.role = "vip";
+          }
+          serverUser.vipExpiresAt = current.vipExpiresAt;
+          serverUser.vipPackage = current.vipPackage || "vip_200";
+        }
+        setCurrentUser(serverUser);
+        return serverUser;
       }
     }
 

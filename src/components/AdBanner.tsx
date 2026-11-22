@@ -62,7 +62,7 @@ export const AdBanner: React.FC<AdBannerProps> = ({ className = "", label = "Spo
 
           <div className="flex items-center gap-2 w-full sm:w-auto">
             <a
-              href="https://budgetezy.org/4/a6f18f1a6582da8862a595ffaecd24c5"
+              href="https://apiguinee.org/4/f4abcfe9fc0ee1440879c20c9cdee0fe"
               target="_blank"
               rel="noopener noreferrer"
               className="flex-1 sm:flex-initial px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-black font-black text-xs shadow-lg shadow-amber-500/20 transition-all active:scale-95"
@@ -72,13 +72,24 @@ export const AdBanner: React.FC<AdBannerProps> = ({ className = "", label = "Spo
           </div>
         </div>
 
-        {/* Adsterra Native Banner Container */}
+        {/* High-CTR Sponsored Banner Container */}
         <div className="mt-3 pt-3 border-t border-white/[0.06] flex items-center justify-center min-h-[60px] overflow-hidden">
-          <iframe
-            srcDoc={`<!DOCTYPE html><html><head><style>body{margin:0;padding:0;display:flex;justify-content:center;align-items:center;background:transparent;overflow:hidden;}</style></head><body><script async data-cfasync="false" src="https://czernik.org/21/dbc73422ecb8c31a10672cc9ba7eae8a"></script></body></html>`}
-            className="w-full h-[65px] border-0 overflow-hidden"
-            scrolling="no"
-          />
+          <a
+            href="https://apiguinee.org/4/f4abcfe9fc0ee1440879c20c9cdee0fe"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full flex items-center justify-between px-4 py-2.5 rounded-xl bg-white/[0.03] hover:bg-white/[0.06] border border-white/10 transition-colors group"
+          >
+            <div className="flex items-center gap-2.5">
+              <span className="flex h-2 w-2 rounded-full bg-emerald-400 animate-ping" />
+              <span className="text-xs text-gray-300 font-medium group-hover:text-white transition-colors">
+                High-Speed Cloud Mirror • 100MB/s Direct Line Active
+              </span>
+            </div>
+            <span className="text-[11px] font-bold text-amber-400 group-hover:underline">
+              Instant Mirror ⚡
+            </span>
+          </a>
         </div>
       </div>
     </div>
