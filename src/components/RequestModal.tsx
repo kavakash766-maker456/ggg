@@ -12,6 +12,7 @@ import {
   UserProfile,
   addUserRequestHistory,
   isVipActive,
+  checkDuplicateMovieRequest,
 } from "@/lib/userState";
 import { VipShareModal } from "@/components/VipShareModal";
 import { AuthModal } from "@/components/AuthModal";
@@ -54,10 +55,18 @@ export const RequestModal: React.FC<RequestModalProps> = ({
     (movie as any).category === "cartoon" ||
     movie.url?.includes("sinhalacartoons") ||
     movie.url?.includes("lakvision") ||
+    /cartoon|sinhala dubbed/i.test(movie.title || "") ||
+    (movie as any).genres?.some((g: string) => /cartoon|sinhala dubbed/i.test(g)) ||
     (movie as any).categories?.some((c: string) => /cartoon|sinhala dubbed/i.test(c))
   );
 
-  const isAnime = !isCartoon && Boolean(
+  const isTeledrama = Boolean(
+    (movie as any).id?.toString().startsWith("tele-") ||
+    (movie as any).category === "teledrama" ||
+    movie.url?.includes("col3neg")
+  );
+
+  const isAnime = !isCartoon && !isTeledrama && Boolean(
     (movie as any).id?.toString().startsWith("anime-") ||
     (movie as any).category === "anime-series" ||
     (movie as any).category === "anime-movie" ||
@@ -66,10 +75,11 @@ export const RequestModal: React.FC<RequestModalProps> = ({
     movie.url?.includes("hianime")
   );
 
-  const isSeries = !isCartoon && Boolean(
+  const isSeries = (!isCartoon || (movie.episodes && movie.episodes.length > 0)) && Boolean(
     movie.kind === "series" ||
     (movie.episodes && movie.episodes.length > 0) ||
-    isAnime
+    isAnime ||
+    isTeledrama
   );
   const targetBotPhone = botPhone || "94782088603";
 
@@ -318,10 +328,11 @@ export const RequestModal: React.FC<RequestModalProps> = ({
     const epBatchCount = isIndividual ? sortedEps.length : Math.max(1, endEpisode - startEpisode + 1);
 
     const posterParam = movie.poster ? ` | poster:${movie.poster}` : "";
+    const seasonCode = selectedSeason === 0 ? "S_ALL" : `S${selectedSeason}`;
     const botCommand = isAnime
       ? `!anime ${animeQuery} | Season ${selectedSeason || 1} | ${selectedQuality} | ${requestToken} | ${epRangeStr} | ${effectiveDelivery}${posterParam}`
       : isSeries
-      ? `!req_season ${movie.url} | S${selectedSeason} | ${selectedQuality} | ${requestToken} | ${epRangeStr} | ${effectiveDelivery}${posterParam}`
+      ? `!req_season ${movie.url} | ${seasonCode} | ${selectedQuality} | ${requestToken} | ${epRangeStr} | ${effectiveDelivery}${posterParam}`
       : `!req ${requestUrl} | ${selectedQuality} | ${requestToken} | ${effectiveDelivery}${posterParam}`;
 
     const deliveryDestinationText = effectiveDelivery === "inbox"
@@ -544,6 +555,19 @@ ${botCommand}`;
                     Select Season Pack
                   </label>
                   <div className="flex flex-wrap gap-2">
+                    {availableSeasons.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => setSelectedSeason(0)}
+                        className={`rounded-xl px-4 py-2 text-xs font-bold transition-all ${
+                          selectedSeason === 0
+                            ? "bg-gradient-to-r from-amber-500 to-amber-600 text-black font-black shadow-lg shadow-amber-500/20"
+                            : "bg-white/[0.06] text-amber-300 hover:text-white border border-amber-500/30"
+                        }`}
+                      >
+                        🔥 All Seasons (Full Series)
+                      </button>
+                    )}
                     {availableSeasons.map((s) => (
                       <button
                         key={s}
@@ -837,6 +861,23 @@ ${botCommand}`;
                 )}
               </div>
 
+              {/* Duplicate Request Notice */}
+              {(() => {
+                const dup = checkDuplicateMovieRequest(movie.url || movie.title);
+                if (!dup.isDuplicate) return null;
+                return (
+                  <div className="rounded-2xl border border-rose-500/40 bg-rose-500/10 p-3.5 flex items-start gap-3 text-xs text-rose-300">
+                    <AlertTriangle className="h-5 w-5 text-rose-400 shrink-0 mt-0.5" />
+                    <div>
+                      <span className="font-bold text-white">චිත්‍රපටය දැනටමත් ඉල්ලා ඇත (Duplicate Request)</span>
+                      <p className="text-[11px] text-gray-300 mt-1 leading-relaxed">
+                        ඔබ මෙම චිත්‍රපටය පසුගිය පැය 24 තුළ දැනටමත් ඉල්ලා ඇත. නැවත ඉල්ලීමට තව <b>{dup.remainingHours}h {dup.remainingMinutes}m</b> රැඳී සිටින්න.
+                      </p>
+                    </div>
+                  </div>
+                );
+              })()}
+
               {/* Action Buttons: Dual Delivery Modes for VIP vs Free Flow */}
               {isUserVip ? (
                 <div className="space-y-2.5 pt-1">
@@ -844,8 +885,9 @@ ${botCommand}`;
                     {/* Button 1: Request to Inbox */}
                     <button
                       type="button"
+                      disabled={checkDuplicateMovieRequest(movie.url || movie.title).isDuplicate}
                       onClick={() => handleRequestClick("inbox")}
-                      className="flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-amber-400 to-amber-500 py-3.5 px-4 text-xs font-black text-black shadow-glow-gold hover:from-amber-300 hover:to-amber-400 transition-all"
+                      className="flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-amber-400 to-amber-500 py-3.5 px-4 text-xs font-black text-black shadow-glow-gold hover:from-amber-300 hover:to-amber-400 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <Inbox className="h-4 w-4" />
                       <span>REQUEST TO INBOX</span>
@@ -854,8 +896,9 @@ ${botCommand}`;
                     {/* Button 2: Request to Group */}
                     <button
                       type="button"
+                      disabled={checkDuplicateMovieRequest(movie.url || movie.title).isDuplicate}
                       onClick={() => handleRequestClick("group")}
-                      className="flex items-center justify-center gap-2 rounded-2xl bg-indigo-600 hover:bg-indigo-500 py-3.5 px-4 text-xs font-black text-white shadow-glow-brand transition-all border border-indigo-400/30"
+                      className="flex items-center justify-center gap-2 rounded-2xl bg-indigo-600 hover:bg-indigo-500 py-3.5 px-4 text-xs font-black text-white shadow-glow-brand transition-all border border-indigo-400/30 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <Users className="h-4 w-4" />
                       <span>REQUEST TO GROUP</span>
@@ -866,17 +909,31 @@ ${botCommand}`;
                   </p>
                 </div>
               ) : (
-                <div>
-                  <button
-                    type="button"
-                    onClick={() => handleRequestClick("group")}
-                    className="w-full flex items-center justify-center gap-2 rounded-2xl py-3.5 px-6 text-xs font-black bg-white text-black hover:bg-gray-100 shadow-xl transition-all"
-                  >
-                    <span>PROCEED TO VERIFICATION & DISPATCH</span>
-                    <ArrowRight className="h-4 w-4" />
-                  </button>
+                <div className="space-y-2 pt-1">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    {/* Locked Button for Inbox */}
+                    <button
+                      type="button"
+                      onClick={() => setIsVipModalOpen(true)}
+                      className="flex items-center justify-center gap-2 rounded-2xl bg-white/5 border border-white/10 py-3.5 px-4 text-xs font-bold text-gray-400 hover:bg-white/10 transition-all"
+                    >
+                      <Lock className="h-4 w-4 text-amber-400" />
+                      <span>REQUEST TO INBOX (VIP ONLY)</span>
+                    </button>
+
+                    {/* Group Button */}
+                    <button
+                      type="button"
+                      disabled={checkDuplicateMovieRequest(movie.url || movie.title).isDuplicate}
+                      onClick={() => handleRequestClick("group")}
+                      className="flex items-center justify-center gap-2 rounded-2xl py-3.5 px-6 text-xs font-black bg-white text-black hover:bg-gray-100 shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <span>REQUEST TO GROUP (5-STEP VERIFY)</span>
+                      <ArrowRight className="h-4 w-4" />
+                    </button>
+                  </div>
                   <p className="text-[10px] text-gray-400 text-center mt-2">
-                    Free members complete a 4-step secure verification before WhatsApp group dispatch.
+                    Free members complete a 5-step secure verification before WhatsApp group dispatch. VIP members skip verification and unlock personal inbox delivery.
                   </p>
                 </div>
               )}

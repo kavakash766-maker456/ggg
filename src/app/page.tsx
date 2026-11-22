@@ -31,7 +31,7 @@ import {
   X,
 } from "lucide-react";
 
-export type ContentTab = "movies" | "series" | "cartoons" | "anime" | "mylist";
+export type ContentTab = "movies" | "series" | "teledramas" | "cartoons" | "anime" | "mylist";
 export type FilterPill = "Popular" | "Trending" | "Recommendation" | "Top Rated" | "Coming Soon";
 
 const CATEGORY_PILLS: FilterPill[] = [
@@ -96,6 +96,8 @@ export default function HomePage() {
           endpoint = `/api/latest?page=${page}`;
         } else if (tab === "series") {
           endpoint = `/api/series?page=${page}`;
+        } else if (tab === "teledramas") {
+          endpoint = `/api/teledramas?page=${page}&limit=24`;
         } else if (tab === "cartoons") {
           endpoint = `/api/cartoons?page=${page}&limit=24`;
         } else if (tab === "anime") {
@@ -114,6 +116,9 @@ export default function HomePage() {
         } else if (tab === "series") {
           items = data.series || [];
           totalP = data.totalPages || 30;
+        } else if (tab === "teledramas") {
+          items = data.teledramas || [];
+          totalP = data.totalPages || 2;
         } else if (tab === "cartoons") {
           items = data.cartoons || [];
           totalP = data.totalPages || 9;
@@ -438,6 +443,18 @@ export default function HomePage() {
                   }`}
                 >
                   TV Series
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleTabChange("teledramas")}
+                  className={`px-3 py-1 rounded-xl text-xs font-bold transition-all flex items-center gap-1 ${
+                    activeTab === "teledramas"
+                      ? "bg-blue-600/30 text-blue-300 border border-blue-500/30 shadow-sm"
+                      : "text-gray-400 hover:text-white"
+                  }`}
+                >
+                  <Tv className="h-3 w-3 text-blue-400" />
+                  <span>Teledramas 📺</span>
                 </button>
                 <button
                   type="button"
@@ -772,6 +789,8 @@ export default function HomePage() {
                           <Sparkles className="h-4 w-4 text-indigo-400" />
                         ) : activeTab === "cartoons" ? (
                           <Tv className="h-4 w-4 text-amber-400" />
+                        ) : activeTab === "teledramas" ? (
+                          <Tv className="h-4 w-4 text-blue-400" />
                         ) : activeTab === "series" ? (
                           <Tv className="h-4 w-4 text-blue-400" />
                         ) : (
@@ -784,6 +803,8 @@ export default function HomePage() {
                             ? "AnimeGG Official Releases"
                             : activeTab === "cartoons"
                             ? "Sinhala Dubbed Cartoons (Cloudflare R2 Direct)"
+                            : activeTab === "teledramas"
+                            ? "Sinhala Teledramas (Col3neg Official Broadcast)"
                             : activeTab === "series"
                             ? "TV Series Catalog"
                             : "Full Cinema Catalog"}

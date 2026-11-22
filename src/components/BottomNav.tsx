@@ -137,7 +137,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
         className="fixed bottom-4 inset-x-0 z-50 block lg:hidden pointer-events-none px-5"
       >
         <div className="mx-auto max-w-[340px] pointer-events-auto">
-          <div className="relative flex items-center justify-around rounded-full border border-white/[0.12] bg-[#12141F]/95 px-2 py-2.5 backdrop-blur-2xl shadow-[0_15px_35px_-5px_rgba(0,0,0,0.95),0_0_20px_rgba(0,0,0,0.6)]">
+          <div className="relative flex items-center justify-around rounded-full border border-white/[0.12] bg-black/95 px-2 py-2.5 backdrop-blur-2xl shadow-[0_15px_35px_-5px_rgba(0,0,0,0.95),0_0_20px_rgba(0,0,0,0.8)]">
             {navItems.map((item) => {
               const Icon = item.icon;
               const isActive = currentTab === item.id;

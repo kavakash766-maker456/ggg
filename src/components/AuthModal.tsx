@@ -26,9 +26,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   if (!isOpen) return null;
 
   const performUserSync = async (userEmail: string, displayName?: string, photoURL?: string) => {
-    const cleanEmail = userEmail.trim().toLowerCase();
-    if (!cleanEmail || !cleanEmail.includes("@")) {
-      throw new Error("Please enter a valid Google Account email (e.g. yourname@gmail.com)");
+    let cleanEmail = userEmail.trim().toLowerCase();
+    if (!cleanEmail) {
+      throw new Error("Please enter your Google email or WhatsApp number");
+    }
+    if (!cleanEmail.includes("@")) {
+      cleanEmail = `${cleanEmail.replace(/\D/g, "") || "user"}@filmfeed.lk`;
     }
 
     const deviceId = await getDynamicDeviceId();

@@ -19,123 +19,18 @@ export interface VipPackage {
 
 export const VIP_PACKAGES: VipPackage[] = [
   {
-    id: "starter_50",
-    name: "Starter VIP",
-    price: 50,
-    days: 30,
-    label: "Rs. 50 (30 Days)",
-    description: "4 Movies/day • 1 TV Series Season • 1 Anime Season • 720p HD",
-    dailyMovies: 4,
-    monthlySeries: 1,
-    monthlyAnime: 1,
-    inboxDelivery: false,
-    badge: "STARTER",
-  },
-  {
-    id: "basic_100",
-    name: "Basic VIP",
-    price: 100,
-    days: 30,
-    label: "Rs. 100 (30 Days)",
-    description: "8 Movies/day • 3 TV Series Seasons • 3 Anime Seasons • 1080p FHD",
-    dailyMovies: 8,
-    monthlySeries: 3,
-    monthlyAnime: 3,
-    inboxDelivery: false,
-    badge: "BASIC",
-  },
-  {
-    id: "bronze_150",
-    name: "Bronze VIP",
-    price: 150,
-    days: 30,
-    label: "Rs. 150 (30 Days)",
-    description: "12 Movies/day • 5 TV Series Seasons • 5 Anime Seasons • 1080p FHD",
-    dailyMovies: 12,
-    monthlySeries: 5,
-    monthlyAnime: 5,
-    inboxDelivery: false,
-    badge: "BRONZE",
-  },
-  {
-    id: "silver_200",
-    name: "Silver VIP",
+    id: "vip_200",
+    name: "VIP Monthly Pass",
     price: 200,
     days: 30,
-    label: "Rs. 200 (30 Days)",
-    description: "15 Movies/day • 8 TV Series Seasons • 8 Anime Seasons • Inbox Delivery 📥",
-    dailyMovies: 15,
-    monthlySeries: 8,
-    monthlyAnime: 8,
-    inboxDelivery: true,
-    badge: "SILVER",
-  },
-  {
-    id: "gold_300",
-    name: "Gold VIP",
-    price: 300,
-    days: 30,
-    label: "Rs. 300 (30 Days)",
-    description: "25 Movies/day • 15 TV Series • 15 Anime • 1080p FHD & 4K • Inbox Delivery 📥",
-    dailyMovies: 25,
+    label: "Rs. 200 / Month (30 Days)",
+    description: "👑 100% Ad-Free • Instant 1-Click Request • Direct WhatsApp Inbox Delivery • All TV Series & Anime",
+    dailyMovies: 30,
     monthlySeries: 15,
     monthlyAnime: 15,
     inboxDelivery: true,
-    badge: "POPULAR",
+    badge: "VIP 👑",
     isPopular: true,
-  },
-  {
-    id: "platinum_400",
-    name: "Platinum VIP",
-    price: 400,
-    days: 30,
-    label: "Rs. 400 (30 Days)",
-    description: "40 Movies/day • 25 TV Series • 25 Anime • Ultra Fast Speed • Full Inbox Delivery 📥",
-    dailyMovies: 40,
-    monthlySeries: 25,
-    monthlyAnime: 25,
-    inboxDelivery: true,
-    badge: "PRO",
-  },
-  {
-    id: "unlimited_500",
-    name: "Ultimate Unlimited VIP",
-    price: 500,
-    days: 30,
-    label: "Rs. 500 (30 Days / 1 Month)",
-    description: "🔥 UNLIMITED Movies • UNLIMITED TV Series & Anime • Ultra Priority Queue • Full Inbox Delivery 📥",
-    dailyMovies: 9999,
-    monthlySeries: 9999,
-    monthlyAnime: 9999,
-    inboxDelivery: true,
-    badge: "ULTIMATE",
-    isPopular: true,
-  },
-  {
-    id: "unlimited_3months",
-    name: "Unlimited 3-Months",
-    price: 1350,
-    days: 90,
-    label: "Rs. 1,350 (90 Days - Save 10%)",
-    description: "🔥 UNLIMITED Everything for 3 Months • 4K Master Dispatches • VIP Hotline Support",
-    dailyMovies: 9999,
-    monthlySeries: 9999,
-    monthlyAnime: 9999,
-    inboxDelivery: true,
-    badge: "SAVE 10%",
-  },
-  {
-    id: "unlimited_1year",
-    name: "Unlimited 1-Year Pass",
-    price: 4800,
-    days: 365,
-    label: "Rs. 4,800 (365 Days - Save 20%)",
-    description: "👑 365 Days of Unlimited Cinema & Anime • Complete Inbox Delivery • Top Server Priority",
-    dailyMovies: 9999,
-    monthlySeries: 9999,
-    monthlyAnime: 9999,
-    inboxDelivery: true,
-    badge: "BEST VALUE",
   },
 ];
 
@@ -205,6 +100,44 @@ export function addUserRequestHistory(item: UserRequestHistoryItem): void {
     localStorage.setItem(USER_REQUESTS_KEY, JSON.stringify(list));
     window.dispatchEvent(new CustomEvent("filmfeed-requests-change", { detail: { list } }));
   } catch (_) {}
+}
+
+export function checkDuplicateMovieRequest(movieUrlOrTitle: string): {
+  isDuplicate: boolean;
+  remainingHours: number;
+  remainingMinutes: number;
+} {
+  if (typeof window === "undefined" || !movieUrlOrTitle) {
+    return { isDuplicate: false, remainingHours: 0, remainingMinutes: 0 };
+  }
+  try {
+    const list = getUserRequestHistory();
+    const normTarget = movieUrlOrTitle.toLowerCase().replace(/[^a-z0-9]/g, "");
+    const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
+    const now = Date.now();
+
+    for (const item of list) {
+      const itemTitleNorm = (item.title || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+      const itemUrlNorm = ((item as any).url || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+
+      const matches =
+        (normTarget.length >= 4 && itemTitleNorm.includes(normTarget)) ||
+        (itemTitleNorm.length >= 4 && normTarget.includes(itemTitleNorm)) ||
+        (itemUrlNorm && normTarget.includes(itemUrlNorm));
+
+      if (matches && item.timestamp) {
+        const reqTime = new Date(item.timestamp).getTime();
+        const diffMs = now - reqTime;
+        if (diffMs < TWENTY_FOUR_HOURS_MS) {
+          const remainingMs = TWENTY_FOUR_HOURS_MS - diffMs;
+          const remainingHours = Math.floor(remainingMs / (1000 * 60 * 60));
+          const remainingMinutes = Math.floor((remainingMs % (1000 * 60 * 60)) / (1000 * 60));
+          return { isDuplicate: true, remainingHours, remainingMinutes };
+        }
+      }
+    }
+  } catch (_) {}
+  return { isDuplicate: false, remainingHours: 0, remainingMinutes: 0 };
 }
 
 export interface UserDailyUsage {

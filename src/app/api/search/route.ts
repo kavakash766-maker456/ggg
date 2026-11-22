@@ -3,6 +3,7 @@ import { searchMovies } from "@/lib/cinesubz";
 import { searchSinhalaSub } from "@/lib/sinhalasub";
 import { searchAnime } from "@/lib/anime";
 import { searchCartoons } from "@/lib/cartoons";
+import { searchTeledramas } from "@/lib/teledramas";
 
 export const dynamic = "force-dynamic";
 
@@ -15,6 +16,11 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ results: [] });
   }
 
+  if (tab === "teledramas") {
+    const teledramaResults = searchTeledramas(q);
+    return NextResponse.json({ results: teledramaResults });
+  }
+
   if (tab === "anime") {
     const animeResults = await searchAnime(q);
     return NextResponse.json({ results: animeResults });
@@ -25,7 +31,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ results: cartoonResults });
   }
 
-  // Multi-source concurrent search: CineSubz + SinhalaSub + Cartoons fallback
+  // Multi-source concurrent search: CineSubz + SinhalaSub + Cartoons + Teledramas fallback
   const [csRes, shRes] = await Promise.allSettled([
     searchMovies(q),
     searchSinhalaSub(q),
@@ -57,6 +63,16 @@ export async function GET(request: NextRequest) {
   // Also include matching Sinhala Cartoons
   const cartoonMatches = searchCartoons(q);
   for (const item of cartoonMatches) {
+    const norm = item.title.toLowerCase().replace(/[^a-z0-9]/g, "");
+    if (!seenTitles.has(norm)) {
+      seenTitles.add(norm);
+      combined.push(item);
+    }
+  }
+
+  // Also include matching Sinhala Teledramas
+  const teledramaMatches = searchTeledramas(q);
+  for (const item of teledramaMatches) {
     const norm = item.title.toLowerCase().replace(/[^a-z0-9]/g, "");
     if (!seenTitles.has(norm)) {
       seenTitles.add(norm);

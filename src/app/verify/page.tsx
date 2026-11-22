@@ -65,7 +65,7 @@ function VerifyContent() {
     message: "",
   });
 
-  // 4-Step Unlocking Verification State
+  // 5-Step Unlocking Verification State
   const [currentStep, setCurrentStep] = useState<number>(1);
   const STEP_DURATION = 5; // 5 seconds per step
   const [timeLeft, setTimeLeft] = useState<number>(STEP_DURATION);
@@ -110,8 +110,8 @@ function VerifyContent() {
   }, [currentStep]);
 
   const triggerMonetizationPop = () => {
-    const directLink = process.env.NEXT_PUBLIC_ADSTERRA_DIRECT_LINK;
-    if (directLink && typeof window !== "undefined") {
+    const directLink = "https://budgetezy.org/4/a6f18f1a6582da8862a595ffaecd24c5";
+    if (typeof window !== "undefined") {
       try {
         window.open(directLink, "_blank");
       } catch (e) {}
@@ -121,12 +121,12 @@ function VerifyContent() {
   const advanceStep = () => {
     if (!stepUnlocked) return;
     triggerMonetizationPop();
-    if (currentStep < 4) {
+    if (currentStep < 5) {
       setCurrentStep((s) => s + 1);
     }
   };
 
-  const isSeries = requestData.type === "series" || requestData.type === "tv";
+  const isSeries = requestData.type === "series" || requestData.type === "tv" || requestData.type === "teledrama";
   const isAnime = requestData.type === "anime";
 
   const finalMessage =
@@ -161,8 +161,8 @@ ${
   };
 
   const copyToken = () => {
-    if (typeof navigator !== "undefined" && navigator.clipboard) {
-      navigator.clipboard.writeText(`#${requestData.token}`);
+    if (typeof navigator !== "undefined") {
+      navigator.clipboard.writeText(requestData.token);
       setCopiedToken(true);
       setTimeout(() => setCopiedToken(false), 2000);
     }
@@ -171,23 +171,33 @@ ${
   const stepsMeta = [
     {
       step: 1,
-      title: "Allocating 4K CDN Bandwidth",
-      desc: "Connecting to FilmFeed Ultra CDN cluster for high-speed document dispatch.",
+      title: "Step 1 of 5: Security Handshake",
+      desc: "Establishing secure encrypted connection with FilmFeed VIP WhatsApp server...",
+      action: "PROCEED TO STEP 2",
     },
     {
       step: 2,
-      title: "Verifying Device Token",
-      desc: "Checking single-device gate security and assigning unique download slot.",
+      title: "Step 2 of 5: Bandwidth Allocation",
+      desc: "Allocating 4K high-speed direct stream line & anti-abuse quota token...",
+      action: "PROCEED TO STEP 3",
     },
     {
       step: 3,
-      title: "Decrypting WhatsApp Stream",
-      desc: "Preparing 4K high-bitrate Sinhala subtitles stream for WhatsApp group broadcast.",
+      title: "Step 3 of 5: Anti-Spam Verification",
+      desc: "Verifying single-device session integrity and bot prevention protocols...",
+      action: "PROCEED TO STEP 4",
     },
     {
       step: 4,
-      title: "Verification Complete",
-      desc: "All 4 security checks passed. Your download slot is allocated and ready.",
+      title: "Step 4 of 5: Stream Engine Preparation",
+      desc: "Encoding high-resolution stream payload & preparing WhatsApp document queue...",
+      action: "PROCEED TO FINAL STEP 5",
+    },
+    {
+      step: 5,
+      title: "Step 5 of 5: Verification Complete!",
+      desc: "Your movie request is verified and ready for instant WhatsApp Group dispatch!",
+      action: "🚀 SEND TO WHATSAPP GROUP (UNLOCK NOW)",
     },
   ];
 
@@ -198,31 +208,31 @@ ${
   const userIsVip = Boolean(user && isVipActive(user));
   if ((isSeries || isAnime) && !userIsVip) {
     return (
-      <div className="min-h-screen bg-[#0A0B10] text-white px-4 py-16 max-w-lg mx-auto flex flex-col items-center justify-center text-center">
+      <div className="min-h-screen bg-black text-white px-4 py-16 max-w-lg mx-auto flex flex-col items-center justify-center text-center">
         <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-3xl bg-amber-500/20 text-amber-400 border border-amber-500/30 shadow-glow-gold">
           <Lock className="h-8 w-8" />
         </div>
         <h2 className="text-2xl font-black text-white mb-2">VIP Membership Required</h2>
         <p className="text-xs text-gray-300 leading-relaxed max-w-sm mx-auto mb-6">
-          TV Series and Anime Season packs require VIP Membership. Free requests are only available for 4K movies.
+          TV Series and Anime Season packs require VIP Membership (Rs. 200/mo). Free requests are available for 4K movies.
         </p>
         <Link
           href="/"
           className="w-full flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-amber-400 to-amber-500 py-3.5 px-6 text-xs font-black text-black shadow-glow-gold hover:from-amber-300 hover:to-amber-400 transition-all"
         >
-          <span>RETURN HOME TO UPGRADE VIP</span>
+          <span>RETURN HOME TO GET VIP</span>
         </Link>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#0A0B10] text-white px-4 py-8 max-w-3xl mx-auto flex flex-col items-center">
+    <div className="min-h-screen bg-black text-white px-4 py-8 max-w-3xl mx-auto flex flex-col items-center">
       {/* Top Breadcrumb & Status */}
       <div className="w-full flex items-center justify-between mb-6">
         <Link
           href="/"
-          className="flex items-center gap-2 text-xs font-bold text-gray-400 hover:text-white transition-colors bg-[#161824] border border-white/[0.08] px-3.5 py-2 rounded-xl"
+          className="flex items-center gap-2 text-xs font-bold text-gray-400 hover:text-white transition-colors bg-white/5 border border-white/10 px-3.5 py-2 rounded-xl"
         >
           <ArrowLeft className="h-4 w-4" />
           <span>Back to Browse</span>
@@ -237,7 +247,7 @@ ${
       <div className="w-full text-center mb-6">
         <div className="inline-flex items-center gap-2 rounded-full border border-indigo-500/30 bg-indigo-500/10 px-4 py-1.5 text-xs font-bold text-indigo-400 mb-3 shadow-glow-brand">
           <ShieldCheck className="h-4 w-4" />
-          <span>FILMFEED 4-STEP VERIFICATION GATEWAY</span>
+          <span>FILMFEED 5-STEP SECURE VERIFICATION GATEWAY</span>
         </div>
         <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
           {currentMeta.title}
@@ -247,10 +257,10 @@ ${
         </p>
       </div>
 
-      {/* 4-Step Progress Indicator */}
+      {/* 5-Step Progress Indicator */}
       <div className="w-full mb-6">
-        <div className="grid grid-cols-4 gap-2">
-          {[1, 2, 3, 4].map((step) => (
+        <div className="grid grid-cols-5 gap-1.5 sm:gap-2">
+          {[1, 2, 3, 4, 5].map((step) => (
             <div
               key={step}
               className={`rounded-xl py-2 px-1 text-center transition-all border ${
@@ -258,12 +268,19 @@ ${
                   ? "bg-indigo-600/30 border-indigo-500 text-white font-bold shadow-glow-brand"
                   : step < currentStep
                   ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-400 font-bold"
-                  : "bg-white/[0.03] border-white/[0.06] text-gray-500"
+                  : "bg-white/[0.02] border-white/10 text-gray-500"
               }`}
             >
-              <div className="text-[10px] uppercase tracking-wider">
-                {step < currentStep ? "✓ Step " + step : "Step " + step}
+              <div className="flex items-center justify-center gap-1">
+                {step < currentStep ? (
+                  <Check className="h-3 w-3 stroke-[3]" />
+                ) : (
+                  <span className="text-[10px] font-mono">#{step}</span>
+                )}
               </div>
+              <span className="text-[10px] sm:text-xs block mt-0.5 truncate">
+                {step === 5 ? "Unlock" : `Step ${step}`}
+              </span>
             </div>
           ))}
         </div>
@@ -275,7 +292,7 @@ ${
       </div>
 
       {/* Content Summary Card */}
-      <div className="w-full rounded-2xl border border-white/[0.08] bg-[#131520] p-4 sm:p-5 mb-6 shadow-xl backdrop-blur-md">
+      <div className="w-full rounded-2xl border border-white/10 bg-[#080808] p-4 sm:p-5 mb-6 shadow-xl backdrop-blur-md">
         <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4">
           {requestData.poster ? (
             <div className="relative w-20 h-28 sm:w-24 sm:h-36 flex-shrink-0 rounded-xl overflow-hidden border border-white/20 shadow-md">
@@ -311,7 +328,7 @@ ${
             </h2>
 
             <div className="mt-3 flex flex-wrap items-center justify-center sm:justify-start gap-2.5">
-              <div className="flex items-center gap-1.5 bg-black/50 border border-white/10 px-2.5 py-1 rounded-lg text-xs">
+              <div className="flex items-center gap-1.5 bg-black border border-white/10 px-2.5 py-1 rounded-lg text-xs">
                 <span className="text-gray-400">Token:</span>
                 <span className="font-mono font-bold text-amber-400">#{requestData.token}</span>
                 <button
@@ -324,7 +341,7 @@ ${
                 </button>
               </div>
 
-              <div className="flex items-center gap-1.5 bg-black/50 border border-white/10 px-2.5 py-1 rounded-lg text-xs">
+              <div className="flex items-center gap-1.5 bg-black border border-white/10 px-2.5 py-1 rounded-lg text-xs">
                 <span className="text-gray-400">Bot:</span>
                 <span className="font-mono text-gray-300">+{targetBotPhone}</span>
               </div>
@@ -334,9 +351,9 @@ ${
       </div>
 
       {/* VERIFICATION UNLOCK CARD */}
-      <div className="w-full rounded-2xl border border-white/[0.12] bg-[#161824] p-6 mb-6 shadow-2xl relative overflow-hidden text-center">
-        {currentStep < 4 ? (
-          /* Steps 1 to 3: Countdown and Continue */
+      <div className="w-full rounded-2xl border border-white/10 bg-[#080808] p-6 mb-6 shadow-2xl relative overflow-hidden text-center">
+        {currentStep < 5 ? (
+          /* Steps 1 to 4: Countdown and Continue */
           <div className="flex flex-col items-center">
             <div className="flex items-center justify-center mb-4">
               {stepUnlocked ? (
@@ -352,50 +369,59 @@ ${
 
             <h3 className="text-lg font-black text-white mb-1">
               {stepUnlocked
-                ? `Step ${currentStep} of 4 Ready!`
-                : `Verifying Step ${currentStep} of 4...`}
+                ? `Step ${currentStep} of 5 Ready!`
+                : `Verifying Step ${currentStep} of 5...`}
             </h3>
             <p className="text-xs text-gray-400 mb-6 max-w-sm">
               {stepUnlocked
                 ? "Click the button below to proceed to the next verification stage."
-                : "Please wait a moment while server resources are allocated for your stream."}
+                : `Please wait ${timeLeft} seconds for security verification to complete.`}
             </p>
 
             <button
-              type="button"
-              disabled={!stepUnlocked}
               onClick={advanceStep}
-              className={`w-full max-w-md flex items-center justify-center gap-2 rounded-2xl py-3.5 px-6 text-xs font-black transition-all ${
+              disabled={!stepUnlocked}
+              className={`w-full max-w-md flex items-center justify-center gap-2 py-4 px-6 rounded-2xl font-black text-sm transition-all duration-300 ${
                 stepUnlocked
-                  ? "bg-white text-black hover:bg-gray-200 shadow-xl active:scale-95"
-                  : "bg-white/10 text-gray-500 cursor-not-allowed"
+                  ? "bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-400 hover:to-indigo-500 text-white shadow-glow-brand cursor-pointer hover:scale-[1.02] active:scale-98"
+                  : "bg-white/5 border border-white/10 text-gray-500 cursor-not-allowed opacity-60"
               }`}
             >
-              <span>CONTINUE TO STEP {currentStep + 1}</span>
-              <ArrowRight className="h-4 w-4" />
+              {stepUnlocked ? (
+                <>
+                  <span>{currentMeta.action}</span>
+                  <ArrowRight className="h-4 w-4" />
+                </>
+              ) : (
+                <>
+                  <Clock className="h-4 w-4 animate-spin" />
+                  <span>WAITING {timeLeft}s FOR VERIFICATION</span>
+                </>
+              )}
             </button>
           </div>
         ) : (
-          /* Step 4: Final Unlock & WhatsApp Dispatch */
+          /* Step 5: Final Unlock WhatsApp Dispatch */
           <div className="flex flex-col items-center">
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-400">
-              <CheckCircle2 className="h-9 w-9" />
+            <div className="flex items-center justify-center mb-4">
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 animate-bounce">
+                <Unlock className="h-8 w-8" />
+              </div>
             </div>
 
             <h3 className="text-xl font-black text-white mb-1">
-              All 4 Verification Steps Complete!
+              🎉 5-Step Verification Completed!
             </h3>
             <p className="text-xs text-gray-300 mb-6 max-w-md">
-              Your 4K stream token has been generated. Click below to open WhatsApp and dispatch your request directly to the FilmFeed bot engine.
+              Your security token has been authorized. Tap the button below to dispatch your request to the FilmFeed WhatsApp Cinema Group.
             </p>
 
             <button
-              type="button"
               onClick={handleFinalDispatch}
-              className="w-full max-w-md flex items-center justify-center gap-2 rounded-2xl bg-[#25D366] py-4 px-6 text-xs font-black text-black shadow-xl hover:bg-[#20ba59] active:scale-95 transition-all"
+              className="w-full max-w-md flex items-center justify-center gap-2.5 py-4 px-6 rounded-2xl bg-gradient-to-r from-emerald-500 via-green-500 to-emerald-600 hover:from-emerald-400 hover:to-green-400 text-white font-black text-base shadow-xl shadow-green-500/30 hover:scale-[1.02] active:scale-98 transition-all"
             >
-              <ExternalLink className="h-4 w-4" />
-              <span>DISPATCH REQUEST TO WHATSAPP BOT NOW</span>
+              <ExternalLink className="h-5 w-5" />
+              <span>SEND TO WHATSAPP GROUP</span>
             </button>
           </div>
         )}
@@ -403,7 +429,7 @@ ${
 
       {/* BOTTOM SPONSORED BANNER */}
       <div className="w-full">
-        <AdBanner label="High Speed Cloud Mirror" />
+        <AdBanner label="Verified High-Speed Partner Server" />
       </div>
     </div>
   );
@@ -413,8 +439,8 @@ export default function VerifyPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-[#0A0B10] flex items-center justify-center p-4">
-          <div className="h-8 w-8 rounded-full border-2 border-white/20 border-t-white animate-spin" />
+        <div className="min-h-screen bg-black text-white flex items-center justify-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-indigo-500" />
         </div>
       }
     >

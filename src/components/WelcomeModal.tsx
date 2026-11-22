@@ -1,16 +1,18 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { getCurrentUser, getDeviceId } from "@/lib/userState";
-import { Check, X, Sparkles, ShieldCheck, Zap, Coins } from "lucide-react";
+import { getCurrentUser, getDeviceId, setCurrentUser, UserProfile } from "@/lib/userState";
+import { Check, X, Sparkles, ShieldCheck, Zap, Coins, Mail, Smartphone, ArrowRight } from "lucide-react";
 import { usePathname } from "next/navigation";
 
 export const WelcomeModal: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [emailOrPhone, setEmailOrPhone] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
   const pathname = usePathname();
 
   useEffect(() => {
-    // Skip inside Admin panel
     if (pathname && pathname.startsWith("/admin")) {
       return;
     }
@@ -28,72 +30,70 @@ export const WelcomeModal: React.FC = () => {
   if (getCurrentUser()) return null;
   if (!isOpen) return null;
 
-  const [isLoading, setIsLoading] = useState(false);
-
   const handleContinueAsGuest = () => {
     sessionStorage.setItem("filmfeed_welcome_seen", "true");
     setIsOpen(false);
   };
 
-  const handleGoogleLogin = async () => {
+  const handleInstantSignIn = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const val = emailOrPhone.trim();
+    if (!val) {
+      setErrorMsg("Please enter your email or phone number.");
+      return;
+    }
+
     setIsLoading(true);
+    setErrorMsg("");
+
     try {
-      const { auth, googleProvider } = await import("@/lib/firebase");
-      const { signInWithPopup, signInWithRedirect } = await import("firebase/auth");
-      const { setCurrentUser, syncUserWithServer, getDeviceId } = await import("@/lib/userState");
+      const isEmail = val.includes("@");
+      const cleanEmail = isEmail ? val.toLowerCase() : `${val.replace(/\D/g, "")}@filmfeed.lk`;
+      const cleanName = isEmail ? val.split("@")[0] : `User_${val.slice(-4)}`;
+      const deviceId = getDeviceId();
 
-      try {
-        const cred = await signInWithPopup(auth, googleProvider);
-        if (cred?.user?.email) {
-          const fbUser = cred.user;
-          const deviceId = getDeviceId();
-          const userEmail = fbUser.email || "";
+      const syncRes = await fetch("/api/user/sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: cleanName,
+          email: cleanEmail,
+          phone: !isEmail ? val : "",
+          deviceId,
+        }),
+      });
 
-          // Sync with Firestore directly
-          const syncRes = await fetch("/api/user/sync", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              name: fbUser.displayName || userEmail.split("@")[0],
-              email: userEmail.toLowerCase(),
-              image: fbUser.photoURL || "",
-              deviceId,
-            }),
-          });
-          const syncData = await syncRes.json();
-          const restored = syncData.user || {
-            id: "usr_" + fbUser.uid.substring(0, 10),
-            name: fbUser.displayName || (userEmail ? userEmail.split("@")[0] : "User"),
-            email: userEmail.toLowerCase(),
-            image: fbUser.photoURL || "",
-            role: "user" as const,
-            deviceId,
-            coins: 50,
-            isVip: false,
-            createdAt: new Date().toISOString(),
-            lastLoginAt: new Date().toISOString(),
-          };
-          setCurrentUser(restored);
-          sessionStorage.setItem("filmfeed_welcome_seen", "true");
-          setIsOpen(false);
-          window.dispatchEvent(new CustomEvent("filmfeed-user-change"));
-          return;
-        }
-      } catch (popupErr: any) {
-        console.warn("Popup blocked or failed, opening instant sign in modal:", popupErr?.message);
-        sessionStorage.setItem("filmfeed_welcome_seen", "true");
-        setIsOpen(false);
-        window.dispatchEvent(new CustomEvent("open-auth-modal"));
-      }
+      const syncData = await syncRes.json();
+      const userProfile: UserProfile = syncData.user || {
+        id: "usr_" + Math.random().toString(36).substring(2, 10),
+        name: cleanName,
+        email: cleanEmail,
+        phone: !isEmail ? val : "",
+        role: "user" as const,
+        deviceId,
+        coins: 50,
+        isVip: false,
+        createdAt: new Date().toISOString(),
+        lastLoginAt: new Date().toISOString(),
+      };
+
+      setCurrentUser(userProfile);
+      sessionStorage.setItem("filmfeed_welcome_seen", "true");
+      setIsOpen(false);
+      window.dispatchEvent(new CustomEvent("filmfeed-user-change"));
     } catch (err: any) {
-      console.error("Firebase Google Auth failed:", err);
+      setErrorMsg(err.message || "Sign in failed. Continuing as guest...");
+      setTimeout(() => {
+        handleContinueAsGuest();
+      }, 1500);
+    } finally {
       setIsLoading(false);
     }
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-xl animate-fadeIn text-white">
-      <div className="relative w-full max-w-lg rounded-3xl border border-white/20 bg-surface p-6 sm:p-7 shadow-2xl max-h-[95vh] overflow-y-auto">
+      <div className="relative w-full max-w-lg rounded-3xl border border-white/10 bg-black p-6 sm:p-7 shadow-2xl max-h-[95vh] overflow-y-auto">
         <button
           onClick={handleContinueAsGuest}
           className="absolute top-4 right-4 rounded-full bg-white/10 p-2 text-gray-400 hover:text-white transition-colors"
@@ -111,120 +111,110 @@ export const WelcomeModal: React.FC = () => {
             Choose Your Access Level
           </h2>
           <p className="text-xs text-gray-400 mt-1">
-            Google Sign In is 100% Free & gives you daily movie quotas + TV series access.
+            Free membership gives you daily movie quotas + TV series access.
           </p>
         </div>
 
-        {/* Comparison Matrix */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5">
-          {/* Guest Card */}
-          <div className="rounded-2xl border border-white/10 bg-black/50 p-4 flex flex-col justify-between">
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-xs font-black text-gray-400 uppercase tracking-wider">
-                  Guest Access
-                </span>
-                <span className="rounded bg-white/10 px-2 py-0.5 text-[9px] font-bold text-gray-400">
-                  Trial
-                </span>
-              </div>
-
-              <ul className="space-y-2.5 text-xs text-gray-300">
-                <li className="flex items-center gap-2">
-                  <Check className="h-3.5 w-3.5 text-gray-400 shrink-0" />
-                  <span>1 Free Movie Request</span>
-                </li>
-                <li className="flex items-center gap-2 text-gray-500">
-                  <X className="h-3.5 w-3.5 text-red-500 shrink-0" />
-                  <span>No TV Series Access</span>
-                </li>
-                <li className="flex items-center gap-2 text-gray-500">
-                  <X className="h-3.5 w-3.5 text-red-500 shrink-0" />
-                  <span>Standard Queue</span>
-                </li>
-                <li className="flex items-center gap-2 text-gray-500">
-                  <X className="h-3.5 w-3.5 text-red-500 shrink-0" />
-                  <span>0 Welcome Coins</span>
-                </li>
-              </ul>
+        {/* Access Cards */}
+        <div className="space-y-4">
+          {/* Option A: Guest Access */}
+          <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-4 transition-all">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-bold text-sm text-gray-300">GUEST ACCESS</h3>
+              <span className="text-[10px] rounded-md bg-white/10 px-2 py-0.5 font-bold text-gray-400 uppercase">
+                Trial
+              </span>
             </div>
-
+            <ul className="space-y-1.5 text-xs text-gray-400 mb-4">
+              <li className="flex items-center gap-2">
+                <Check className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
+                <span>1 Free Movie Request</span>
+              </li>
+              <li className="flex items-center gap-2 text-gray-500">
+                <X className="h-3.5 w-3.5 shrink-0" />
+                <span>No TV Series Access</span>
+              </li>
+              <li className="flex items-center gap-2 text-gray-500">
+                <X className="h-3.5 w-3.5 shrink-0" />
+                <span>Standard Queue</span>
+              </li>
+            </ul>
             <button
               onClick={handleContinueAsGuest}
-              className="mt-4 w-full rounded-xl border border-white/20 bg-surface py-2.5 text-xs font-bold text-gray-300 hover:bg-white/10 hover:text-white transition-all"
+              className="w-full rounded-xl border border-white/10 bg-white/5 py-2.5 text-xs font-bold text-white hover:bg-white/10 transition-colors"
             >
               Continue as Guest
             </button>
           </div>
 
-          {/* Google Account Card (Recommended) */}
-          <div className="relative rounded-2xl border-2 border-white bg-surface p-4 flex flex-col justify-between shadow-glow-white">
-            <div className="absolute -top-2.5 right-4 rounded-full bg-white px-2.5 py-0.5 text-[9px] font-black text-black uppercase tracking-wider">
+          {/* Option B: Free Account (Email / WhatsApp Instant Sign In) */}
+          <div className="relative rounded-2xl border-2 border-white bg-gradient-to-b from-white/10 to-transparent p-5 shadow-lg">
+            <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-white px-3 py-0.5 text-[10px] font-black uppercase tracking-wider text-black">
               Recommended
             </div>
 
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-xs font-black text-white uppercase tracking-wider flex items-center gap-1">
-                  <span>Google Account</span>
-                </span>
-                <span className="rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 text-[9px] font-black">
-                  100% FREE
-                </span>
-              </div>
-
-              <ul className="space-y-2.5 text-xs text-white">
-                <li className="flex items-center gap-2 font-bold">
-                  <Check className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
-                  <span>6 Movies / Day Free</span>
-                </li>
-                <li className="flex items-center gap-2 font-bold">
-                  <Check className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
-                  <span>1 TV Series Season / Day</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <Zap className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
-                  <span>Priority Ultra-Fast Queue</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <Coins className="h-3.5 w-3.5 text-amber-400 shrink-0" />
-                  <span className="text-amber-400 font-bold">+50 Free Coins Bonus</span>
-                </li>
-              </ul>
+            <div className="flex items-center justify-between mb-3 mt-1">
+              <h3 className="font-bold text-sm text-white">FREE MEMBER ACCOUNT</h3>
+              <span className="text-[10px] rounded-md bg-emerald-500/20 px-2 py-0.5 font-bold text-emerald-400">
+                100% FREE
+              </span>
             </div>
 
-            <button
-              onClick={handleGoogleLogin}
-              disabled={isLoading}
-              className="mt-4 w-full flex items-center justify-center gap-2 rounded-xl bg-white py-2.5 text-xs font-black text-black shadow-lg hover:bg-gray-100 transition-all active:scale-95 disabled:opacity-70"
-            >
-              <svg className="h-4 w-4" viewBox="0 0 24 24">
-                <path
-                  fill="#4285F4"
-                  d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                />
-                <path
-                  fill="#34A853"
-                  d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                />
-                <path
-                  fill="#FBBC05"
-                  d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
-                />
-                <path
-                  fill="#EA4335"
-                  d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
-                />
-              </svg>
-              <span>{isLoading ? "CONNECTING TO GOOGLE..." : "SIGN IN WITH GOOGLE"}</span>
-            </button>
-          </div>
-        </div>
+            <ul className="space-y-2 text-xs text-gray-200 mb-4">
+              <li className="flex items-center gap-2">
+                <Check className="h-4 w-4 text-emerald-400 shrink-0" />
+                <span><b>6 Movies / Day</b> Free</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <Check className="h-4 w-4 text-emerald-400 shrink-0" />
+                <span><b>1 TV Series Season / Day</b></span>
+              </li>
+              <li className="flex items-center gap-2">
+                <Zap className="h-4 w-4 text-amber-400 shrink-0" />
+                <span>Priority Ultra-Fast Queue</span>
+              </li>
+              <li className="flex items-center gap-2 text-amber-300 font-bold">
+                <Coins className="h-4 w-4 text-amber-400 shrink-0" />
+                <span>+50 Free Coins Bonus</span>
+              </li>
+            </ul>
 
-        {/* Footer Note */}
-        <div className="flex items-center justify-center gap-1.5 text-[10px] text-gray-500 text-center">
-          <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
-          <span>1 Device = 1 Account • Auto WhatsApp mention when downloaded</span>
+            <form onSubmit={handleInstantSignIn} className="space-y-2.5">
+              <div className="relative">
+                <input
+                  type="text"
+                  value={emailOrPhone}
+                  onChange={(e) => setEmailOrPhone(e.target.value)}
+                  placeholder="Enter Google Email or WhatsApp Number"
+                  className="w-full rounded-xl border border-white/20 bg-black/60 px-4 py-3 text-xs text-white placeholder-gray-500 focus:border-white focus:outline-none focus:ring-1 focus:ring-white transition-all"
+                />
+              </div>
+
+              {errorMsg && (
+                <p className="text-[11px] text-rose-400 text-center">{errorMsg}</p>
+              )}
+
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full flex items-center justify-center gap-2 rounded-xl bg-white py-3 text-xs font-black text-black hover:bg-gray-200 transition-all active:scale-98 disabled:opacity-50"
+              >
+                {isLoading ? (
+                  <span>Signing in...</span>
+                ) : (
+                  <>
+                    <span>SIGN IN INSTANTLY</span>
+                    <ArrowRight className="h-4 w-4" />
+                  </>
+                )}
+              </button>
+            </form>
+
+            <div className="mt-3 flex items-center justify-center gap-1.5 text-[10px] text-gray-400">
+              <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
+              <span>1 Device = 1 Account • Auto WhatsApp mention when downloaded</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>
