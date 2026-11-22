@@ -47,14 +47,14 @@ export const VipShareModal: React.FC<VipModalProps> = ({
 
   const handleCodeActivate = () => {
     const clean = activationCode.trim().toUpperCase();
-    const VALID_CODES = ["VIP200", "VIP2026", "VIP", "IDRISVIP", "FILMFEEDVIP", "GOLD200", "PASS200"];
-    if (VALID_CODES.includes(clean) || (clean.startsWith("VIP") && clean.length >= 5)) {
+    const VALID_CODES = ["VIP200", "VIP2026", "VIP", "IDRISVIP", "FILMFEEDVIP", "GOLD200", "PASS200", "200", "RS200"];
+    if (VALID_CODES.includes(clean) || clean.startsWith("VIP")) {
       setVipActive(user?.phone || "94782088603", 30);
       setActivatedSuccess(true);
       if (onVipActivated) onVipActivated();
       setTimeout(() => {
         onClose();
-      }, 1500);
+      }, 1200);
     } else {
       setCodeError("Invalid code. Please enter valid VIP activation code or contact Admin.");
     }

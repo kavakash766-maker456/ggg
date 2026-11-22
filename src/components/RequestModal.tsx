@@ -517,14 +517,40 @@ ${botCommand}`;
               <p className="text-xs text-gray-300 leading-relaxed max-w-sm mx-auto mb-6">
                 To prevent automated spam and secure bandwidth allocation, you must sign in with your Google account before requesting movies or TV series.
               </p>
-              <button
-                type="button"
-                onClick={() => setIsAuthModalOpen(true)}
-                className="w-full flex items-center justify-center gap-2 rounded-2xl bg-white py-3.5 px-6 text-xs font-black text-black shadow-lg hover:bg-gray-100 transition-all"
-              >
-                <LogIn className="h-4 w-4" />
-                <span>SIGN IN WITH GOOGLE TO CONTINUE</span>
-              </button>
+              <div className="space-y-2.5">
+                <button
+                  type="button"
+                  onClick={() => setIsAuthModalOpen(true)}
+                  className="w-full flex items-center justify-center gap-2 rounded-2xl bg-white py-3.5 px-6 text-xs font-black text-black shadow-lg hover:bg-gray-100 transition-all"
+                >
+                  <LogIn className="h-4 w-4" />
+                  <span>SIGN IN WITH GOOGLE / WHATSAPP</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const devId = getDeviceId();
+                    const guestUser = {
+                      id: "usr_" + devId.slice(-8),
+                      name: "Guest Member",
+                      email: `guest_${devId.slice(-6)}@filmfeed.lk`,
+                      role: "user" as const,
+                      deviceId: devId,
+                      coins: 50,
+                      isVip: false,
+                      createdAt: new Date().toISOString(),
+                      lastLoginAt: new Date().toISOString(),
+                    };
+                    setCurrentUser(guestUser);
+                    setProfile(guestUser);
+                    setAuthRequired(false);
+                    window.dispatchEvent(new CustomEvent("filmfeed-user-change"));
+                  }}
+                  className="w-full flex items-center justify-center gap-2 rounded-2xl border border-white/20 bg-white/5 py-3 text-xs font-bold text-gray-300 hover:text-white hover:bg-white/10 transition-all"
+                >
+                  <span>1-Tap Instant Guest Access</span>
+                </button>
+              </div>
             </div>
           ) : blockedReason ? (
             /* Gate 2: TV Series/Anime VIP Premiere Gate */

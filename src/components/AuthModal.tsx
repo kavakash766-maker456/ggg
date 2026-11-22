@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { setCurrentUser, UserProfile } from "@/lib/userState";
+import { setCurrentUser, UserProfile, getDeviceId } from "@/lib/userState";
 import { getDynamicDeviceId, getDeviceLabel } from "@/lib/deviceFingerprint";
 import { Mail, AlertCircle, X, ShieldCheck, Sparkles, Smartphone, CheckCircle2 } from "lucide-react";
 
@@ -65,10 +65,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     setIsLoading(true);
     setError(null);
 
-    // If user provided an email manually, directly authenticate & sync
-    if (email.trim()) {
+    const enteredEmail = email.trim();
+    const enteredPhone = phone.trim();
+
+    if (enteredEmail) {
       try {
-        await performUserSync(email.trim());
+        await performUserSync(enteredEmail);
         return;
       } catch (err: any) {
         setError(err.message || "Failed to sign in. Please verify your email.");
@@ -77,19 +79,32 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       }
     }
 
-    // Try Google Popup first
-    try {
-      const { auth, googleProvider } = await import("@/lib/firebase");
-      const { signInWithPopup } = await import("firebase/auth");
-      const cred = await signInWithPopup(auth, googleProvider);
-      const user = cred.user;
-      if (user && user.email) {
-        await performUserSync(user.email, user.displayName || undefined, user.photoURL || undefined);
+    if (enteredPhone) {
+      try {
+        const cleanPhoneEmail = `${enteredPhone.replace(/\D/g, "")}@filmfeed.lk`;
+        await performUserSync(cleanPhoneEmail);
+        return;
+      } catch (err: any) {
+        setError(err.message || "Failed to sign in with WhatsApp number.");
+        setIsLoading(false);
         return;
       }
-    } catch (popupErr: any) {
-      console.warn("Popup sign-in not available or cancelled:", popupErr?.code);
-      setError("Please enter your Google Email address below to sign in instantly.");
+    }
+
+    // If neither was typed, prompt user to enter Gmail address
+    setError("Please enter your Google Email (Gmail) address above to sign in instantly.");
+    setIsLoading(false);
+  };
+
+  const handleQuickGuestSignIn = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const devId = getDeviceId();
+      const guestEmail = `guest_${devId.slice(-6)}@filmfeed.lk`;
+      await performUserSync(guestEmail, `FilmFeed Guest`);
+    } catch (err: any) {
+      setError(err.message || "Failed to sign in as guest.");
     } finally {
       setIsLoading(false);
     }
@@ -205,6 +220,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               />
             </svg>
             <span>{isLoading ? "SIGNING IN..." : "CONTINUE WITH GOOGLE"}</span>
+          </button>
+
+          {/* 1-Tap Instant Sign-In as Guest */}
+          <button
+            type="button"
+            onClick={handleQuickGuestSignIn}
+            disabled={isLoading}
+            className="w-full flex items-center justify-center gap-2 rounded-2xl border border-white/20 bg-white/5 py-3 text-xs font-bold text-gray-300 hover:text-white hover:bg-white/10 transition-all active:scale-98"
+          >
+            <span>Or Continue as Guest (1-Tap Instant Access)</span>
           </button>
 
           {/* Device Lock Info */}

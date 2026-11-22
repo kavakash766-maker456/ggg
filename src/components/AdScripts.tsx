@@ -6,7 +6,7 @@ import { getVipStatus } from "@/lib/vip";
 
 export function AdScripts() {
   const [isVip, setIsVip] = useState<boolean>(() => {
-    if (typeof window === "undefined") return true;
+    if (typeof window === "undefined") return false;
     const u = getCurrentUser();
     return Boolean((u && (isVipActive(u) || u.role === "admin" || u.role === "vip")) || getVipStatus());
   });
@@ -39,7 +39,7 @@ export function AdScripts() {
       return;
     }
 
-    // 1. Inject Live Monetag MultiTag / In-Page Push / Vignette into DOM
+    // 1. Inject Live Monetag MultiTag (In-Page Push / Vignette / Interstitial) into DOM
     if (!document.getElementById("monetag-multitag")) {
       const s = document.createElement("script");
       s.id = "monetag-multitag";
@@ -50,17 +50,36 @@ export function AdScripts() {
       document.head.appendChild(s);
     }
 
-    // 2. High-Visibility Popunder / Interaction Trigger for Free Users
+    // 2. Inject Adsterra Popunder Script
+    if (!document.getElementById("adsterra-popunder-tag")) {
+      const s1 = document.createElement("script");
+      s1.id = "adsterra-popunder-tag";
+      s1.src = "https://capitalhospitals.org/1/bd31c4ee769fbf5ab0800093d030f4e3";
+      s1.async = true;
+      s1.setAttribute("data-cfasync", "false");
+      document.head.appendChild(s1);
+    }
+
+    // 3. Inject Adsterra Social Bar Script
+    if (!document.getElementById("adsterra-socialbar-tag")) {
+      const s2 = document.createElement("script");
+      s2.id = "adsterra-socialbar-tag";
+      s2.src = "https://czernik.org/14/4028d6d8bf02d5ef0e46d0542be64755";
+      s2.async = true;
+      s2.setAttribute("data-cfasync", "false");
+      document.head.appendChild(s2);
+    }
+
+    // 4. SmartLink Popunder Trigger on non-navigation clicks
     let lastPopTime = 0;
     const handleDocumentClick = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
-      // Do not trigger if clicking navigation links or VIP buttons
       if (target.closest("a[href*='wa.me']") || target.closest("button[data-no-ad='true']")) {
         return;
       }
 
       const now = Date.now();
-      const COOLDOWN_MS = 60000; // 1 pop per 60 seconds
+      const COOLDOWN_MS = 60000;
       if (now - lastPopTime > COOLDOWN_MS) {
         lastPopTime = now;
         try {

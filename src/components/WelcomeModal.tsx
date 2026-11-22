@@ -37,11 +37,7 @@ export const WelcomeModal: React.FC = () => {
 
   const handleInstantSignIn = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    const val = emailOrPhone.trim();
-    if (!val) {
-      setErrorMsg("Please enter your email or phone number.");
-      return;
-    }
+    const val = emailOrPhone.trim() || `Member_${getDeviceId().slice(-4)}`;
 
     setIsLoading(true);
     setErrorMsg("");
